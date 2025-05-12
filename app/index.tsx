@@ -1,19 +1,25 @@
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useRef, useState } from "react";
+// Adjust the import path as necessary
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
   Image,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 
 import { useRouter } from "expo-router";
+import useAuth from "../hooks/useAuth";
 
 export default function LoginScreen() {
+  const { login, isLoading } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState(["", "", "", ""]);
   const inputRefs = useRef<TextInput[]>([]);
   // const navigation = useNavigation();
@@ -36,8 +42,18 @@ export default function LoginScreen() {
     }
   };
 
-  const handleSubmit = () => {
-    router.push("/onboarding");
+  const handleSubmit = async () => {
+    const pin = password.join("") || null;
+    console.log(email, password.join(""));
+    if (!email && !pin) return;
+
+    try {
+      await login(email, pin);
+      router.push("/onboarding");
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+    // router.push("/onboarding");
   };
 
   return (
@@ -65,6 +81,8 @@ export default function LoginScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             style={styles.input}
+            value={email}
+            onChangeText={setEmail}
           />
 
           <Text style={[styles.label, { marginTop: 20 }]}>Password</Text>
