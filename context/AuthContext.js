@@ -3,9 +3,9 @@ import { getStoredToken, getUserInfo } from "../services/storage/asyncStorage";
 
 export const AuthContext = createContext({
   isAuthenticated: false,
-  setIsAuthenticated: () => {},
+  setIsAuthenticated: () => { },
   userInfo: null,
-  setUserInfo: () => {},
+  setUserInfo: () => { },
 });
 
 export const AuthProvider = ({ children }) => {
@@ -19,10 +19,10 @@ export const AuthProvider = ({ children }) => {
       try {
         const token = await getStoredToken();
         const storedUserInfo = await getUserInfo();
-
+        console.log("Info", { token, storedUserInfo });
         if (token) {
           setIsAuthenticated(true);
-          setUserInfo(storedUserInfo);
+          setUserInfo(storedUserInfo || {}); // Ensure userInfo is not undefined
         }
       } catch (error) {
         console.error("Auth check failed:", error);

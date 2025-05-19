@@ -16,8 +16,8 @@ const AuthAPI = {
 
       console.log("response -------> ", response);
       // Store token and user info
-      await storeToken(response.data.token);
-      await storeUserInfo(response.data.user);
+      await storeToken(response?.data.token || "");
+      // await storeUserInfo(response?.data.user || );
 
       return response.data;
     } catch (error) {

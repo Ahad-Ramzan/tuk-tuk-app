@@ -1,10 +1,10 @@
 import axios from "axios";
 import { getStoredToken, clearStorage } from "../storage/asyncStorage";
-
+export const BASEURL = process.env.EXPO_PUBLIC_API_URL || "https://backend.ecity.estelatechnologies.com/api"
 // Create Axios instance
-const createApiClient = (baseURL) => {
+const createApiClient = () => {
   const apiClient = axios.create({
-    baseURL,
+    baseURL:BASEURL ,
     timeout: 10000,
     headers: {
       "Content-Type": "application/json",
@@ -60,4 +60,5 @@ const createApiClient = (baseURL) => {
 };
 
 // Export configured API client
-export default createApiClient("https://backend.ecity.estelatechnologies.com/api");
+const apiClient = createApiClient();
+export default apiClient;
