@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   clearStorage,
   storeToken,
@@ -16,9 +17,12 @@ const AuthAPI = {
 
       console.log("response -------> ", response);
       // Store token and user info
-      await storeToken(response?.data.token || "");
+      if (response?.data?.token) {
+        let tokk = AsyncStorage.setItem("AUTH_TOKEN", response?.data?.token);
+      } else {
+        console.log("token not set");
+      }
       // await storeUserInfo(response?.data.user || );
-
       return response.data;
     } catch (error) {
       console.error("Login Error:", error.response?.data || error.message);

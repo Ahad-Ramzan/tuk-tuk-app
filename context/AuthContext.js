@@ -1,11 +1,11 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useEffect, useState } from "react";
 import { getStoredToken, getUserInfo } from "../services/storage/asyncStorage";
 
 export const AuthContext = createContext({
   isAuthenticated: false,
-  setIsAuthenticated: () => { },
+  setIsAuthenticated: () => {},
   userInfo: null,
-  setUserInfo: () => { },
+  setUserInfo: () => {},
 });
 
 export const AuthProvider = ({ children }) => {
@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const token = await getStoredToken();
         const storedUserInfo = await getUserInfo();
-        console.log("Info", { token, storedUserInfo });
+        // console.log("Info", { token, storedUserInfo });
         if (token) {
           setIsAuthenticated(true);
           setUserInfo(storedUserInfo || {}); // Ensure userInfo is not undefined

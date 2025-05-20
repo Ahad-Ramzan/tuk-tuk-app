@@ -1,10 +1,13 @@
 import axios from "axios";
-import { getStoredToken, clearStorage } from "../storage/asyncStorage";
-export const BASEURL = process.env.EXPO_PUBLIC_API_URL || "https://backend.ecity.estelatechnologies.com/api"
+import { clearStorage, getStoredToken } from "../storage/asyncStorage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+export const BASEURL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  "https://backend.ecity.estelatechnologies.com/api";
 // Create Axios instance
 const createApiClient = () => {
   const apiClient = axios.create({
-    baseURL:BASEURL ,
+    baseURL: BASEURL,
     timeout: 10000,
     headers: {
       "Content-Type": "application/json",
@@ -16,9 +19,10 @@ const createApiClient = () => {
     async (config) => {
       try {
         // Retrieve and add token to headers
-        const token = await getStoredToken();
+        const token = await AsyncStorage.getItem("AUTH_TOKEN");
+        console.log("token gya AJAX ly k", token);
         if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+          config.headers.Authorization = `token ${token}`;
         }
         return config;
       } catch (error) {
