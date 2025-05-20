@@ -1,12 +1,15 @@
 import apiClient from "./apiClient";
 
 // GET /challenges/?page=1
-export const getChallenges = async (page: number = 1) => {
+export const getChallenges = async (page: number = 2) => {
   try {
-    const response = await apiClient.get(`/challenges/?page=${page}`);
+    const response = await apiClient.get(`/ecity/challenges`);
     return response.data;
   } catch (error: any) {
-    console.error("Error fetching challenges:", error.response?.data || error.message);
+    console.error(
+      "Error fetching challenges:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 };
@@ -17,7 +20,10 @@ export const createChallenge = async (data: any) => {
     const response = await apiClient.post(`/challenges/`, data);
     return response.data;
   } catch (error: any) {
-    console.error("Error creating challenge:", error.response?.data || error.message);
+    console.error(
+      "Error creating challenge:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 };
@@ -28,7 +34,10 @@ export const getChallengeById = async (id: string) => {
     const response = await apiClient.get(`/challenges/${id}/`);
     return response.data;
   } catch (error: any) {
-    console.error("Error fetching challenge by ID:", error.response?.data || error.message);
+    console.error(
+      "Error fetching challenge by ID:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 };
@@ -39,7 +48,10 @@ export const getSubmissions = async () => {
     const response = await apiClient.get(`/Activity/submissions/`);
     return response.data;
   } catch (error: any) {
-    console.error("Error fetching submissions:", error.response?.data || error.message);
+    console.error(
+      "Error fetching submissions:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 };
@@ -50,7 +62,10 @@ export const createSubmission = async (data: any) => {
     const response = await apiClient.post(`/Activity/submissions/`, data);
     return response.data;
   } catch (error: any) {
-    console.error("Error creating submission:", error.response?.data || error.message);
+    console.error(
+      "Error creating submission:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 };
@@ -61,7 +76,10 @@ export const getSubmissionById = async (id: string) => {
     const response = await apiClient.get(`/Activity/submissions/${id}/`);
     return response.data;
   } catch (error: any) {
-    console.error("Error fetching submission by ID:", error.response?.data || error.message);
+    console.error(
+      "Error fetching submission by ID:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 };
@@ -72,7 +90,10 @@ export const deleteSubmissionById = async (id: string) => {
     const response = await apiClient.delete(`/Activity/submissions/${id}/`);
     return response.data;
   } catch (error: any) {
-    console.error("Error deleting submission:", error.response?.data || error.message);
+    console.error(
+      "Error deleting submission:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 };

@@ -7,7 +7,7 @@ const STORAGE_KEYS = {
 };
 
 // Store Token
-export const storeToken = async (token) => {
+export const storeToken = async (token: string) => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.USER_TOKEN, token);
   } catch (error) {
@@ -18,13 +18,25 @@ export const storeToken = async (token) => {
 // Get Stored Token
 export const getStoredToken = async () => {
   try {
-    return await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
+    const token = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
+    console.log(token, "getStoredToken");
+    return token;
   } catch (error) {
     console.error("Error retrieving token:", error);
     return null;
   }
 };
-
+//
+const getToken = async () => {
+  try {
+    const token = await AsyncStorage.getItem("user_token");
+    console.log("Retrieved token:", token);
+    return token;
+  } catch (error) {
+    console.error("Error retrieving token:", error);
+    return null;
+  }
+};
 // Store User Info
 export const storeUserInfo = async (userInfo) => {
   try {

@@ -1,17 +1,19 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  useWindowDimensions,
-  ImageSourcePropType,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
+import { getChallenges } from "@/services/api";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  Image,
+  ImageSourcePropType,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
 type Slide = {
   id: number;
@@ -38,13 +40,33 @@ const slides: Slide[] = [
 ];
 
 export default function SlideshowScreen() {
+  // useEffect(() => {
+  //   const fetchChallenges = getChallenges();
+  // });
   const router = useRouter();
   const { company } = useTheme();
+
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   const imageSize = isLandscape ? height * 0.5 : width * 0.7;
+  const [challenges, setChallenges] = useState([]);
+
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      try {
+        const token = await AsyncStorage.getItem("user_token");
+        const data = await getChallenges( token);
+        setChallenges(data?.results || []);
+        console.log("Fetched challenges:", data);
+      } catch (error) {
+        console.error("Failed to fetch challenges:", error);
+      }
+    };
+
+    fetchChallenges();
+  }, []);
 
   const isLastSlide = currentIndex === slides.length - 1;
 
@@ -56,8 +78,6 @@ export default function SlideshowScreen() {
     }
   };
 
-/*************  ✨ Windsurf Command ⭐  *************/
-/*******  e5bc1757-b4c4-4893-8cb4-e2bff162c748  *******/
   const handleBack = () => {
     if (currentIndex > 0) {
       setCurrentIndex((prev) => prev - 1);
@@ -77,9 +97,11 @@ export default function SlideshowScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.exitButton}>
-          <Ionicons name="chevron-back" size={16} color="#333" />
+          {currentIndex !== 0 ? (
+            <Ionicons name="chevron-back" size={16} color="#333" />
+          ) : null}
           <Text style={styles.exitLabel}>
-            {currentIndex === 0 ? "Exit" : "Back"}
+            {currentIndex === 0 ? "" : "Back"}
           </Text>
         </TouchableOpacity>
 
