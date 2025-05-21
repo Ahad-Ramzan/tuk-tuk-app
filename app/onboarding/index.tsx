@@ -59,7 +59,7 @@ export default function SlideshowScreen() {
         const token = await AsyncStorage.getItem("user_token");
         const data = await getChallenges( token);
         setChallenges(data?.results || []);
-        console.log("Fetched challenges:", data);
+        // console.log("Fetched challenges:", data);
       } catch (error) {
         console.error("Failed to fetch challenges:", error);
       }

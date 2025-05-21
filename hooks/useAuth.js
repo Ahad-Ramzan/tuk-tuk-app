@@ -15,7 +15,7 @@ const useAuth = () => {
 
       try {
         const userData = await AuthAPI.login(email, password);
-        console.log(userData, "USERdata ------- hehe");
+        // console.log(userData, "USERdata ------- hehe");
         // Update context
         setIsAuthenticated(true);
         setUserInfo(userData.user);

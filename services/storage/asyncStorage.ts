@@ -19,7 +19,7 @@ export const storeToken = async (token: string) => {
 export const getStoredToken = async () => {
   try {
     const token = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
-    console.log(token, "getStoredToken");
+    // console.log(token, "getStoredToken");
     return token;
   } catch (error) {
     console.error("Error retrieving token:", error);
@@ -30,7 +30,7 @@ export const getStoredToken = async () => {
 const getToken = async () => {
   try {
     const token = await AsyncStorage.getItem("user_token");
-    console.log("Retrieved token:", token);
+    // console.log("Retrieved token:", token);
     return token;
   } catch (error) {
     console.error("Error retrieving token:", error);

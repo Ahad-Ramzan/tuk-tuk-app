@@ -59,7 +59,7 @@ const DrawingBoard = () => {
     try {
       const image = await canvasRef.current?.makeImageSnapshot();
       const base64 = image.encodeToBase64("png");
-      console.log("Base64 image data:", base64);
+      // console.log("Base64 image data:", base64);
       Alert.alert(
         "Canvas exported",
         "Image exported as base64 (check console)"

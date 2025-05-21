@@ -49,7 +49,7 @@ export default function LoginScreen() {
 
   const handleSubmit = async () => {
     const pin = password.join("") || null;
-    console.log(email, password.join(""));
+    // console.log(email, password.join(""));
     if (!email && !pin) return;
 
     try {

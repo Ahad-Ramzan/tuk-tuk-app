@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { Ionicons, Feather } from "@expo/vector-icons"; // Stopwatch icon
+import { Feather, Ionicons } from "@expo/vector-icons"; // Stopwatch icon
+import React, { useEffect, useState } from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import Mapprogress from "@/assets/images/Mapprogress.png";
 import TukOnMeLogo from "@/assets/icons/tukonmefull.png";
+import Mapprogress from "@/assets/images/Mapprogress.png";
 import StartActivity from "@/components/StartActivity";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
@@ -44,12 +43,12 @@ export default function MapPage() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={styles.mapImageContainer}
         onPress={handleMapClick}
       >
         <Image source={Mapprogress} style={styles.mapImage} />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {showStartActivity && (
         <StartActivity onClose={() => setShowStartActivity(false)} />
