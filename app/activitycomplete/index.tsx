@@ -1,17 +1,14 @@
-// app/ActivityPage.tsx
 import React, { useState } from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import { Dimensions, Image, StyleSheet, Text, View } from "react-native";
 
 import ScoreSetter from "@/components/ScoreSetter";
-import { useTheme } from "@/context/ThemeContext";
 import ThemedButton from "@/components/ThemedButton";
-import { useRouter } from "expo-router";
+import { useTheme } from "@/context/ThemeContext";
+import { typeActivity } from "@/types";
 
-export default function ActivityPage() {
+export default function ActivityPage({ activity }: { activity: typeActivity }) {
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
-
   const { company } = useTheme();
-  const router = useRouter();
 
   const handleActivityCompleted = () => {
     setIsActivityCompleted(true);
@@ -42,30 +39,13 @@ export default function ActivityPage() {
           style={styles.illustration}
           resizeMode="contain"
         />
-        <Text style={styles.subtitle}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit
-        </Text>
+        <Text style={styles.subtitle}>{activity.prompt}</Text>
 
         <ThemedButton
           title="Activity Completed"
           onPress={handleActivityCompleted}
         />
       </View>
-
-      {/* Next Button */}
-      {/* <TouchableOpacity
-        style={styles.nextButton}
-        onPress={() => navigation.navigate("ActivityVideo" as never)}
-      >
-        <Text style={styles.nextButtonText}>Next</Text>
-      </TouchableOpacity> */}
-      <ThemedButton
-        title="Next"
-        style={styles.nextButton}
-        onPress={() => router.push("/activityvideo")}
-      />
-
-      {/* ScoreSetter Modal */}
       <ScoreSetter isVisible={isActivityCompleted} onClose={handleCloseModal} />
     </View>
   );
@@ -83,7 +63,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: "100%",
     height: "60%",
-    zIndex: 1, // Ensure background image is behind other content
+    zIndex: 1,
   },
   logo: {
     width: 140,
@@ -126,16 +106,6 @@ const styles = StyleSheet.create({
   },
   completeButtonText: {
     color: "#fff",
-    fontWeight: "600",
-  },
-  nextButton: {
-    position: "absolute",
-    bottom: 40,
-    right: 20,
-    zIndex: 10,
-  },
-  nextButtonText: {
-    color: "white",
     fontWeight: "600",
   },
 });

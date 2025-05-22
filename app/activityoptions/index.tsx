@@ -7,23 +7,26 @@ import {
   TouchableOpacity,
   Dimensions,
 } from "react-native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 import ThemedButton from "@/components/ThemedButton";
+import { typeActivity } from "@/types";
 
 const screenWidth = Dimensions.get("window").width;
 
-const options = [
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-];
-export default function QuizPage() {
+export default function ActivityOptions({ activity }: { activity: typeActivity }) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const router = useRouter();
-  const { company } = useTheme(); // Accessing the theme from context
+  const { company } = useTheme();
+
+  const options = [
+    activity.choice_1,
+    activity.choice_2,
+    activity.choice_3,
+    activity.choice_4,
+  ].filter((choice) => typeof choice === "string" && choice.trim() !== "");
+
+  console.log(activity, "activity=======++++++++");
 
   return (
     <View style={styles.container}>
@@ -52,7 +55,7 @@ export default function QuizPage() {
         />
 
         <Text style={styles.subtitle}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit
+          {activity.prompt}
         </Text>
 
         {/* Options */}
@@ -67,21 +70,6 @@ export default function QuizPage() {
           ))}
         </View>
 
-        {/* Submit / Assign Score */}
-        {/* <TouchableOpacity
-          style={[
-            styles.submitButton,
-            { backgroundColor: company.theme.primaryDark },
-          ]} // Dynamically set the color
-          onPress={() =>
-            submitted ? console.log("Assign Score") : setSubmitted(true)
-          }
-        >
-          <Text style={styles.buttonText}>
-            {submitted ? "Assign Score" : "Submit"}
-          </Text>
-        </TouchableOpacity> */}
-
         <ThemedButton
           title={submitted ? "Assign Score" : "Submit"}
           onPress={() =>
@@ -89,13 +77,6 @@ export default function QuizPage() {
           }
         />
       </View>
-
-      {/* Next Button */}
-      <ThemedButton
-        title="Next"
-        onPress={() => router.push("/activitytext")}
-        style={styles.nextButton}
-      />
     </View>
   );
 }
@@ -116,8 +97,8 @@ function OptionCard({ text, selected, onPress }: OptionCardProps) {
             selected ? "radio-button-on-outline" : "radio-button-off-outline"
           }
           size={20}
-          color={selected ? company.theme.primaryDark : company.theme.primary} // Use company primary for selected option
-          style={{ marginRight: 8 }}
+          color={selected ? company.theme.primaryDark : company.theme.primary}
+          style={{ marginBottom: 4 }}
         />
         <Text style={styles.optionText}>{text}</Text>
       </View>
@@ -128,7 +109,7 @@ function OptionCard({ text, selected, onPress }: OptionCardProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EEF0F3", // lightGray
+    backgroundColor: "#EEF0F3",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -158,7 +139,7 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#414264", // darkGray
+    color: "#414264",
     marginBottom: 16,
     textAlign: "center",
   },
@@ -176,10 +157,11 @@ const styles = StyleSheet.create({
   optionsContainer: {
     width: "100%",
     flexDirection: "row",
-    justifyContent: "space-between", // Even spacing between 3 cards
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 12,
     marginBottom: 16,
   },
-
   optionCard: {
     backgroundColor: "white",
     borderRadius: 12,
@@ -190,31 +172,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    width: "32%", // roughly 3 cards with spacing (100% - 2 * gap)
+    width: "48%",
   },
-
   optionInner: {
-    flexDirection: "column",
-    alignItems: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
   },
   optionText: {
-    color: "#414264", // gray-700
+    color: "#414264",
     flexShrink: 1,
     fontSize: 18,
-  },
-  submitButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  nextButton: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    zIndex: 10,
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "bold",
   },
 });

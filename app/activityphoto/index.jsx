@@ -1,22 +1,22 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef} from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
 import { Camera, useCameraPermissions } from "expo-camera";
+
 
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
 import ThemedButton from "@/components/ThemedButton";
 import { Button } from "@react-navigation/elements";
 
-export default function TakePhoto() {
+export default function PhotoPage({activity}) {
   const [permission, requestPermission] = useCameraPermissions();
-
-  // const [hasPermission, setHasPermission] = useState(null);
   const [photo, setPhoto] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const cameraRef = useRef(null);
   const router = useRouter();
   const { company } = useTheme();
+ 
 
   if (!permission) {
     return null;
@@ -32,13 +32,6 @@ export default function TakePhoto() {
       </View>
     );
   }
-  // Request camera permissions on component mount
-  // useEffect(() => {
-  //   (async () => {
-  //     const { status } = await Camera.requestCameraPermissionsAsync();
-  //     setHasPermission(status === "granted");
-  //   })();
-  // }, []);
 
   const startCamera = () => {
     setIsCameraOpen(true);
@@ -72,7 +65,6 @@ export default function TakePhoto() {
 
   return (
     <View style={styles.container}>
-      {/* Top logo */}
       <View style={styles.logoWrapper}>
         <Image
           source={company.fulllogo}
@@ -81,7 +73,6 @@ export default function TakePhoto() {
         />
       </View>
 
-      {/* Background image */}
       <Image
         source={require("@/assets/images/bgonboarding.png")}
         style={styles.backgroundImg}
@@ -131,14 +122,10 @@ export default function TakePhoto() {
                 <Text style={styles.primaryText}>Capture</Text>
               </TouchableOpacity>
             ) : (
-              // <ThemedButton
-              //   title="Capture"
-              //   onPress={() => router.push("/camera")}
-              // />
+              
               <View style={styles.descriptionWrapper}>
                 <Text style={styles.description}>
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                  Accusantium, maiores.
+                 {activity.prompt}
                 </Text>
                 <ThemedButton
                   title="Take Photo"
@@ -150,12 +137,7 @@ export default function TakePhoto() {
         )}
       </View>
 
-      {/* Next Activity Button */}
-      <ThemedButton
-        title="Next Activity"
-        onPress={() => router.push("activityimage")}
-        style={styles.nextBtn}
-      />
+      
     </View>
   );
 }
@@ -254,10 +236,5 @@ const styles = StyleSheet.create({
   outlineText: {
     color: "#1e293b",
   },
-  nextBtn: {
-    position: "absolute",
-    bottom: 24,
-    right: 24,
-    zIndex: 10,
-  },
+  
 });

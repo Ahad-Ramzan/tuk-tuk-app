@@ -6,14 +6,13 @@ import TukOnMeLogo from "@/assets/icons/tukonmefull.png";
 import StartActivity from "@/components/StartActivity";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
-import { useRouter } from "expo-router";
 
 export default function MapPage() {
   const { company } = useTheme();
   const [progress, setProgress] = useState(45);
   const [timer, setTimer] = useState(60);
   const [showStartActivity, setShowStartActivity] = useState(false);
-  const router = useRouter();
+
   const totalDots = 6;
 
   useEffect(() => {
@@ -53,9 +52,6 @@ export default function MapPage() {
       )}
 
       <View style={styles.header}>
-        {/* <TouchableOpacity onPress={handleExit} style={styles.exitButton}>
-          <Text style={styles.exitButtonText}>Exit</Text>
-        </TouchableOpacity> */}
         <ThemedButton
           title="Exit"
           onPress={handleExit}
@@ -96,10 +92,7 @@ export default function MapPage() {
           </View>
         </View>
 
-        {/* <TouchableOpacity style={styles.recenterButton}>
-          <Feather name="navigation" style={styles.recenterIcon} />
-          <Text style={styles.recenterText}>Re-center</Text>
-        </TouchableOpacity> */}
+       
         <ThemedButton
           title=" Re-center"
           style={styles.recenterButton}
@@ -140,13 +133,13 @@ export default function MapPage() {
         />
       </View>
 
-      <View style={styles.nextButtonContainer}>
+      {/* <View style={styles.nextButtonContainer}>
         <ThemedButton
           style={styles.nextButton}
           onPress={() => router.push("/activityoptions")}
           title="Next"
         />
-      </View>
+      </View> */}
     </View>
   );
 }
@@ -179,15 +172,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  // exitButton: {
-  //   paddingVertical: 8,
-  //   paddingHorizontal: 16,
-  //   borderRadius: 25,
-  // },
-  //   exitButtonText: {
-  //     color: "white",
-  //     fontSize: 16,
-  //   },
   progressBarContainer: {
     alignItems: "center",
     backgroundColor: "white",
@@ -281,8 +265,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    // borderWidth: 2,
-    // borderColor: "#003366",
+    
   },
   timerWarning: {
     backgroundColor: "#fce4e4",
@@ -328,9 +311,5 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 1,
   },
-  //   nextButton: {
-  //     paddingVertical: 10,
-  //     paddingHorizontal: 20,
-  //     borderRadius: 25,
-  //   },
+ 
 });

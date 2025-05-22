@@ -25,7 +25,7 @@ export default function SlideshowScreen() {
   const imageSize = isLandscape ? height * 0.5 : width * 0.7;
 
   const { id } = useLocalSearchParams();
-  const { challenges } = useChallengeStore();
+  const { challenges,setActiveChallenge } = useChallengeStore();
   const [challengeData, setChallengeData] = useState<typeChallengeData | null>(
     null
   );
@@ -37,7 +37,9 @@ export default function SlideshowScreen() {
       const foundChallenge = challenges.find((ch) => ch.id === Number(id));
 
       if (foundChallenge) {
+        console.log(foundChallenge)
         setChallengeData(foundChallenge);
+        setActiveChallenge(foundChallenge);
       }
 
       if (foundChallenge?.prompt) {
