@@ -20,7 +20,7 @@ const createApiClient = () => {
       try {
         // Retrieve and add token to headers
         const token = await AsyncStorage.getItem("AUTH_TOKEN");
-        console.log("token gya AJAX ly k", token);
+        // console.log("token gya AJAX ly k", token);
         if (token) {
           config.headers.Authorization = `token ${token}`;
         }

@@ -1,13 +1,12 @@
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
-import { getChallenges } from "@/services/api";
+import { useChallengeStore } from "@/store/challengeStore";
+import { typeChallengeData, typeSlide } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Image,
-  ImageSourcePropType,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,34 +14,7 @@ import {
   View,
 } from "react-native";
 
-type Slide = {
-  id: number;
-  paragraph: string;
-  image: ImageSourcePropType;
-};
-
-const slides: Slide[] = [
-  {
-    id: 1,
-    paragraph: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-    image: require("@/assets/images/onboarding2.png"),
-  },
-  {
-    id: 2,
-    paragraph: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-    image: require("@/assets/images/onboarding1.png"),
-  },
-  {
-    id: 3,
-    paragraph: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-    image: require("@/assets/images/onboarding3.png"),
-  },
-];
-
 export default function SlideshowScreen() {
-  // useEffect(() => {
-  //   const fetchChallenges = getChallenges();
-  // });
   const router = useRouter();
   const { company } = useTheme();
 
@@ -51,22 +23,50 @@ export default function SlideshowScreen() {
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   const imageSize = isLandscape ? height * 0.5 : width * 0.7;
-  const [challenges, setChallenges] = useState([]);
+
+  const { id } = useLocalSearchParams();
+  const { challenges } = useChallengeStore();
+  const [challengeData, setChallengeData] = useState<typeChallengeData | null>(
+    null
+  );
+  const [slides, setSlides] = useState<typeSlide[]>([]);
+  // console.log("challengeData", challengeData);
 
   useEffect(() => {
-    const fetchChallenges = async () => {
-      try {
-        const token = await AsyncStorage.getItem("user_token");
-        const data = await getChallenges( token);
-        setChallenges(data?.results || []);
-        console.log("Fetched challenges:", data);
-      } catch (error) {
-        console.error("Failed to fetch challenges:", error);
-      }
-    };
+    if (id && challenges.length) {
+      const foundChallenge = challenges.find((ch) => ch.id === Number(id));
 
-    fetchChallenges();
-  }, []);
+      if (foundChallenge) {
+        setChallengeData(foundChallenge);
+      }
+
+      if (foundChallenge?.prompt) {
+        const prompts = foundChallenge.prompt;
+        const generatedSlides: typeSlide[] = Object.entries(prompts)
+          .filter(([_, value]) => !!value)
+          .map(([key, value], index) => ({
+            id: index + 1,
+            paragraph: value,
+            image:
+              index === 0
+                ? require("@/assets/images/onboarding1.png")
+                : index === 1
+                ? require("@/assets/images/onboarding2.png")
+                : require("@/assets/images/onboarding3.png"),
+          }));
+
+        setSlides(generatedSlides);
+      }
+    }
+  }, [id, challenges]);
+
+  if (!challengeData) {
+    return (
+      <View>
+        <Text>Loading challenge...</Text>
+      </View>
+    );
+  }
 
   const isLastSlide = currentIndex === slides.length - 1;
 

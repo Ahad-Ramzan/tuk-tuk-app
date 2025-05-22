@@ -1,12 +1,12 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
+import { useState } from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import ThemedButton from "@/components/ThemedButton";
 import ErrorModal from "@/components/ErrorModal"; // Import ErrorModal
+import ThemedButton from "@/components/ThemedButton";
 
-const ActivityPrompt = ({ onClose }) => {
-  const [showError, setShowError] = useState(false); // State to control error modal visibility
-
+const ActivityPrompt = ({ onClose, ID }) => {
+  const [showError, setShowError] = useState(false);
+  
   return (
     <View style={styles.overlay}>
       <View style={styles.modal}>
