@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState,  useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Image,
-  Dimensions,
 } from "react-native";
 import { Camera } from "expo-camera";
 import { Video } from "expo-av";
@@ -13,7 +12,7 @@ import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import ThemedButton from "@/components/ThemedButton";
 
-export default function TakeVideo() {
+export default function VideoPage({activity}) {
   const [hasPermission, setHasPermission] = useState(null);
   const [cameraRef, setCameraRef] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -151,8 +150,7 @@ export default function TakeVideo() {
             ) : (
               <View style={styles.descriptionWrapper}>
                 <Text style={styles.description}>
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                  Accusantium, maiores.
+                  {activity.prompt}
                 </Text>
                 <ThemedButton
                   title="Take Video"

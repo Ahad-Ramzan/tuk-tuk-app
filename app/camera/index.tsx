@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 import { Image } from "expo-image";
 import { useTheme } from "@/context/ThemeContext";
 import ThemedButton from "@/components/ThemedButton";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -21,7 +21,7 @@ export default function CameraScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
   const { company } = useTheme();
-  const router = useRouter();
+ 
 
   if (!permission) return null;
 
@@ -53,7 +53,6 @@ export default function CameraScreen() {
 
   const handleSubmit = () => {
     setSubmitted(true);
-    // Handle photo upload or score logic here
   };
 
   if (photoUri) {

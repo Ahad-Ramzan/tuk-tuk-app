@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Image, StyleSheet } from "react-native";
 
 import ThemedButton from "@/components/ThemedButton"; // Imported ThemedButton
-import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
+import { typeActivity } from "@/types";
 
-export default function QuizPage() {
+export default function TextQuiz({ activity }:{ activity: typeActivity }) {
   const [answer, setAnswer] = useState<string>("");
   const [submitted, setSubmitted] = useState<boolean>(false);
   const { company } = useTheme();
-  const router = useRouter();
+  
 
   return (
     <View style={styles.container}>
@@ -19,17 +19,6 @@ export default function QuizPage() {
         style={styles.backgroundImage}
       />
 
-      {/* Next button */}
-      <View style={styles.nextButtonContainer}>
-        <ThemedButton
-          onPress={() => {
-            // Add your navigation logic here
-            // navigation.navigate("ActivityDrawing");
-            router.push("/activitydrawing");
-          }}
-          title="Next"
-        />
-      </View>
 
       {/* Logo in the top right corner */}
       <View style={styles.logoContainer}>
@@ -54,7 +43,7 @@ export default function QuizPage() {
 
           {/* Subtitle */}
           <Text style={styles.subtitle}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit
+            {activity.prompt}
           </Text>
 
           {/* Answer Input */}
