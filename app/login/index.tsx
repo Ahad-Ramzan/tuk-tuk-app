@@ -1,6 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useContext, useRef, useState } from "react";
-// Adjust the import path as necessary
 import {
   Image,
   KeyboardAvoidingView,
@@ -21,14 +20,13 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const { isAuthenticated } = useContext(AuthContext);
   if (isAuthenticated) {
-    router.push("/onboarding");
+    router.push("/");
   }
 
   const [email, setEmail] = useState("");
-  //   const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState(["", "", "", ""]);
   const inputRefs = useRef<TextInput[]>([]);
-  // const navigation = useNavigation();
+
 
   const handleChange = (index: number, value: string) => {
     if (/^\d?$/.test(value)) {
@@ -49,17 +47,16 @@ export default function LoginScreen() {
 
   const handleSubmit = async () => {
     const pin = password.join("") || null;
-    console.log(email, password.join(""));
     if (!email && !pin) return;
 
     try {
       await login(email, pin);
 
-      router.push("/onboarding");
+      router.push("/");
     } catch (error) {
       console.error("Login failed:", error);
     }
-    // router.push("/onboarding");
+  
   };
 
   useAuth();

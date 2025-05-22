@@ -1,7 +1,7 @@
 import apiClient from "./apiClient";
 
 // GET /challenges/?page=1
-export const getChallenges = async (page: number = 2) => {
+export const getChallenges = async (token: string | null) => {
   try {
     const response = await apiClient.get(`/ecity/challenges`);
     return response.data;

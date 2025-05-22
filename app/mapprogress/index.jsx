@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { Ionicons, Feather } from "@expo/vector-icons"; // Stopwatch icon
-
+import { Ionicons, Feather } from "@expo/vector-icons"; 
 import Mapprogress from "@/assets/images/Mapprogress.png";
 import TukOnMeLogo from "@/assets/icons/tukonmefull.png";
 import StartActivity from "@/components/StartActivity";
@@ -12,7 +10,6 @@ import { useRouter } from "expo-router";
 
 export default function MapPage() {
   const { company } = useTheme();
-  //   console.log(Company.fulllogo);
   const [progress, setProgress] = useState(45);
   const [timer, setTimer] = useState(60);
   const [showStartActivity, setShowStartActivity] = useState(false);

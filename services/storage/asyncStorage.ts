@@ -19,7 +19,7 @@ export const storeToken = async (token: string) => {
 export const getStoredToken = async () => {
   try {
     const token = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
-    console.log(token, "getStoredToken");
+    // console.log(token, "getStoredToken");
     return token;
   } catch (error) {
     console.error("Error retrieving token:", error);

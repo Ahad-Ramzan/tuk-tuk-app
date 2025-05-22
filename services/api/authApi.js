@@ -15,7 +15,7 @@ const AuthAPI = {
         password,
       });
 
-      console.log("response -------> ", response);
+      // console.log("response -------> ", response);
       // Store token and user info
       if (response?.data?.token) {
         let tokk = AsyncStorage.setItem("AUTH_TOKEN", response?.data?.token);
