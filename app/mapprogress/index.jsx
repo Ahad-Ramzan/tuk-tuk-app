@@ -3,13 +3,17 @@ import React, { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import TukOnMeLogo from "@/assets/icons/tukonmefull.png";
-import Mapprogress from "@/assets/images/Mapprogress.png";
 import StartActivity from "@/components/StartActivity";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
 import { useRouter } from "expo-router";
+// import MapComponent from "../../components/MapView/index";
+import { DEFAULT_REGION } from "../../constants/defaultLocation";
 
 export default function MapPage() {
+  const [region, setRegion] = useState < Region > DEFAULT_REGION;
+  const [selectedPlace, setSelectedPlace] = (useState < Place) | (null > null);
+
   const { company } = useTheme();
   //   console.log(Company.fulllogo);
   const [progress, setProgress] = useState(45);
@@ -17,6 +21,8 @@ export default function MapPage() {
   const [showStartActivity, setShowStartActivity] = useState(false);
   const router = useRouter();
   const totalDots = 6;
+
+  const handleMapPress = (event) => {};
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -43,12 +49,17 @@ export default function MapPage() {
 
   return (
     <View style={styles.container}>
-      {/* <TouchableOpacity
+      <TouchableOpacity
         style={styles.mapImageContainer}
         onPress={handleMapClick}
       >
-        <Image source={Mapprogress} style={styles.mapImage} />
-      </TouchableOpacity> */}
+        {/* <MapComponent
+          region={region}
+          selectedPlace={selectedPlace}
+          onPress={handleMapPress}
+        /> */}
+        {/* <Image source={Mapprogress} style={styles.mapImage} /> */}
+      </TouchableOpacity>
 
       {showStartActivity && (
         <StartActivity onClose={() => setShowStartActivity(false)} />
