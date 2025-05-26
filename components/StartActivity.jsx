@@ -11,7 +11,7 @@ const ActivityPrompt = ({ onClose, ID }) => {
   const { activeChallenge, setActiveTask } = useChallengeStore();
   useEffect(() => {
     if (activeChallenge) {
-      const taskId = 254;
+      const taskId = 125;
       const task = activeChallenge.tasks?.find((t) => t.id === taskId);
 
       if (task) {

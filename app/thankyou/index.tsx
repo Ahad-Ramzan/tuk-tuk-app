@@ -3,16 +3,23 @@ import { View, Text, Image, StyleSheet } from "react-native";
 import ThemedButton from "@/components/ThemedButton";
 import { star, welldone, QRcode } from "@/assets/images";
 import { useTheme } from "@/context/ThemeContext";
+import { router } from "expo-router";
+import { useChallengeStore } from "@/store/challengeStore";
 
 export default function PointsScreen() {
+  const {resetAllPoints,grandTotalPoints}  = useChallengeStore();
   const { company } = useTheme();
-  const points = 150;
+  const points = grandTotalPoints;
+  const handleExit = () => {
+    resetAllPoints();
+    router.replace("/mapprogress");
+  };
 
   return (
     <View style={styles.container}>
       {/* Exit Button */}
       <View style={styles.exitButton}>
-        <ThemedButton title="Exit" onPress={() => {}} />
+        <ThemedButton title="Exit" onPress={handleExit} />
       </View>
 
       {/* Company Logo */}

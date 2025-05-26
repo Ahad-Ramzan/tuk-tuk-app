@@ -1,22 +1,24 @@
-import React, { useState, useRef} from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
-import { Camera, useCameraPermissions } from "expo-camera";
-
-
-import { useTheme } from "@/context/ThemeContext";
-import { useRouter } from "expo-router";
+import ScoreSetter from "@/components/ScoreSetter";
 import ThemedButton from "@/components/ThemedButton";
+import { useTheme } from "@/context/ThemeContext";
+import { useChallengeStore } from "@/store/challengeStore";
 import { Button } from "@react-navigation/elements";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import React, { useRef, useState } from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export default function PhotoPage({activity}) {
+export default function PhotoPage({ activity, onNext, buttonLabel }) {
+  const { addPagePoints, points } = useChallengeStore();
   const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isActivityCompleted, setIsActivityCompleted] = useState(false);
+  const [scoreSelected, setScoreSelected] = useState(false);
   const cameraRef = useRef(null);
-  const router = useRouter();
   const { company } = useTheme();
- 
+  console.log(activity, "Photo Page+++++");
+  const Score = activity.on_app ? points : activity.score;
 
   if (!permission) {
     return null;
@@ -33,10 +35,6 @@ export default function PhotoPage({activity}) {
     );
   }
 
-  const startCamera = () => {
-    setIsCameraOpen(true);
-  };
-
   const takePhoto = async () => {
     if (cameraRef.current) {
       const photoData = await cameraRef.current.takePictureAsync();
@@ -48,20 +46,32 @@ export default function PhotoPage({activity}) {
   const retakePhoto = () => {
     setPhoto(null);
     setSubmitted(false);
-    startCamera();
+    setIsCameraOpen(true);
   };
+
+  const formData = new FormData();
+
+  formData.append("activity", activity.id);
+  formData.append("latitude", activity.location_lat);
+  formData.append("longitude", activity.location_lng);
+  formData.append("file", {
+    uri: photo,
+    name: "photo.jpg",
+    type: "image/jpeg", // or "video/mp4" if it's a video
+  });
 
   const handleSubmit = () => {
-    setSubmitted(true);
+    // setSubmitted(true);
+    addPagePoints(Score);
+    onNext();
   };
-
-  if (permission === null) {
-    return <Text>Requesting permission...</Text>;
-  }
-
-  if (permission === false) {
-    return <Text>No access to camera</Text>;
-  }
+  const handleCloseModal = () => {
+    setIsActivityCompleted(false);
+    setScoreSelected(true);
+  };
+  const handleActivityCompleted = () => {
+    setIsActivityCompleted(true);
+  };
 
   return (
     <View style={styles.container}>
@@ -79,65 +89,70 @@ export default function PhotoPage({activity}) {
         resizeMode="cover"
       />
 
-      <View style={styles.inner}>
-        {photo ? (
-          <>
-            <Text style={styles.title}>Happy with your photo?</Text>
-            <Image source={{ uri: photo }} style={styles.photoPreview} />
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.outlineBtn} onPress={retakePhoto}>
-                <Text style={styles.outlineText}>Retake</Text>
-              </TouchableOpacity>
+      {photo ? (
+        <View style={styles.inner}>
+          <Text style={styles.title}>Happy with your photo?</Text>
+          <Image source={{ uri: photo }} style={styles.photoPreview} />
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.outlineBtn} onPress={retakePhoto}>
+              <Text style={styles.outlineText}>Retake</Text>
+            </TouchableOpacity>
+            {activity.on_app ? (
+              scoreSelected ? (
+                <ThemedButton title="Submit" onPress={handleSubmit} />
+              ) : (
+                <ThemedButton
+                  title="Assign Score"
+                  onPress={handleActivityCompleted}
+                />
+              )
+            ) : (
               <TouchableOpacity
                 style={styles.primaryBtn}
                 onPress={submitted ? undefined : handleSubmit}
               >
-                <Text style={styles.primaryText}>
-                  {submitted ? "Assign Score" : "Submit"}
-                </Text>
+                <Text style={styles.primaryText}>Submit</Text>
               </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <>
-            <Text style={styles.title}>Take a photo!</Text>
-            <View style={styles.cameraWrapper}>
-              {isCameraOpen ? (
-                <Camera
-                  type="front" // Using "front" string directly
-                  ref={cameraRef}
-                  style={styles.camera}
-                />
-              ) : (
-                <Image
-                  source={require("@/assets/images/TakePhoto.png")}
-                  style={styles.placeholder}
-                  resizeMode="contain"
-                />
-              )}
-            </View>
-
-            {isCameraOpen ? (
-              <TouchableOpacity style={styles.primaryBtn} onPress={takePhoto}>
-                <Text style={styles.primaryText}>Capture</Text>
-              </TouchableOpacity>
-            ) : (
-              
-              <View style={styles.descriptionWrapper}>
-                <Text style={styles.description}>
-                 {activity.prompt}
-                </Text>
-                <ThemedButton
-                  title="Take Photo"
-                  onPress={() => router.push("/camera")}
-                />
-              </View>
             )}
-          </>
-        )}
-      </View>
-
-      
+          </View>
+          <ScoreSetter
+            isVisible={isActivityCompleted}
+            onClose={handleCloseModal}
+          />
+        </View>
+      ) : isCameraOpen ? (
+        <View style={styles.fullScreenCameraContainer}>
+          <CameraView
+            ref={cameraRef}
+            style={styles.fullScreenCamera}
+            facing="front"
+          />
+          <View style={styles.captureContainer}>
+            <TouchableOpacity
+              style={styles.shutterButton}
+              onPress={takePhoto}
+            />
+          </View>
+        </View>
+      ) : (
+        <View style={styles.inner}>
+          <Text style={styles.title}>Take a photo!</Text>
+          <View style={styles.cameraWrapper}>
+            <Image
+              source={require("@/assets/images/TakePhoto.png")}
+              style={styles.placeholder}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.descriptionWrapper}>
+            <Text style={styles.description}>{activity.prompt}</Text>
+            <ThemedButton
+              title="Take Photo"
+              onPress={() => setIsCameraOpen(true)}
+            />
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -187,9 +202,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: 20,
   },
-  camera: {
-    flex: 1,
-  },
   placeholder: {
     width: "100%",
     height: "100%",
@@ -236,5 +248,26 @@ const styles = StyleSheet.create({
   outlineText: {
     color: "#1e293b",
   },
-  
+  fullScreenCameraContainer: {
+    flex: 1,
+    width: "100%",
+    position: "relative",
+  },
+  fullScreenCamera: {
+    flex: 1,
+  },
+  captureContainer: {
+    position: "absolute",
+    bottom: 40,
+    alignSelf: "center",
+    zIndex: 20,
+  },
+  shutterButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#FFF",
+    borderWidth: 5,
+    borderColor: "#AAA",
+  },
 });

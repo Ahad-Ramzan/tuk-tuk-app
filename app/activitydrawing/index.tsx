@@ -1,11 +1,11 @@
-import DrawingCanvas from "@/components/DrawingCanvas";
+import DrawingBoard from "@/components/DrawingCanvas";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
 import { typeActivity } from "@/types";
 import React, { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 
-export default function DrawingPage({ activity }: { activity: typeActivity }) {
+export default function DrawingPage({ activity ,onNext}: { activity: typeActivity, onNext: () => void }) {
   const [step, setStep] = useState(1);
   const { company } = useTheme();
   console.log(activity, "Drawing activity=======++++++++");
@@ -35,7 +35,7 @@ export default function DrawingPage({ activity }: { activity: typeActivity }) {
           </View>
         )}
 
-        {step === 2 && <DrawingCanvas />}
+        {step === 2 && <DrawingBoard activity={activity} onNext={onNext}/>}
       </View>
     </View>
   );

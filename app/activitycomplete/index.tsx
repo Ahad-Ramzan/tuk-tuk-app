@@ -5,17 +5,28 @@ import ScoreSetter from "@/components/ScoreSetter";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
 import { typeActivity } from "@/types";
-
-export default function ActivityPage({ activity }: { activity: typeActivity }) {
+import { useChallengeStore } from "@/store/challengeStore";
+export default function ActivityPage({ activity,onNext }: { activity: typeActivity, onNext: () => void }) {
+  const {  addPagePoints, points } = useChallengeStore();
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
+  const [scoreSelected, setScoreSelected] = useState(false);
   const { company } = useTheme();
+const Score = activity.on_app ? points : activity.score;
 
   const handleActivityCompleted = () => {
     setIsActivityCompleted(true);
+     
+     
+
   };
 
   const handleCloseModal = () => {
     setIsActivityCompleted(false);
+    setScoreSelected(true);
+  };
+  const handleSubmit = () => {
+    addPagePoints(Score);
+    onNext();
   };
 
   return (
@@ -41,10 +52,23 @@ export default function ActivityPage({ activity }: { activity: typeActivity }) {
         />
         <Text style={styles.subtitle}>{activity.prompt}</Text>
 
-        <ThemedButton
+        {/* <ThemedButton
           title="Activity Completed"
           onPress={handleActivityCompleted}
-        />
+         
+        /> */}
+         {activity.on_app ? (
+          scoreSelected ? (
+            <ThemedButton title="Submit" onPress={handleSubmit} />
+          ) : (
+            <ThemedButton
+              title="Assign Score"
+              onPress={handleActivityCompleted}
+            />
+          )
+        ) : (
+          <ThemedButton title="Submit" onPress={handleSubmit} />
+        )}
       </View>
       <ScoreSetter isVisible={isActivityCompleted} onClose={handleCloseModal} />
     </View>

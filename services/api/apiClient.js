@@ -1,9 +1,7 @@
-import axios from "axios";
-import { clearStorage, getStoredToken } from "../storage/asyncStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-export const BASEURL =
-  process.env.EXPO_PUBLIC_API_URL ||
-  "https://backend.ecity.estelatechnologies.com/api";
+import axios from "axios";
+import { clearStorage } from "../storage/asyncStorage";
+export const BASEURL = process.env.EXPO_PUBLIC_API_URL;
 // Create Axios instance
 const createApiClient = () => {
   const apiClient = axios.create({

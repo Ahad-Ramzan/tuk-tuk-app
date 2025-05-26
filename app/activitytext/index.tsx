@@ -1,15 +1,41 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, Image, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Image, StyleSheet, Text, TextInput, View } from "react-native";
 
 import ThemedButton from "@/components/ThemedButton"; // Imported ThemedButton
 import { useTheme } from "@/context/ThemeContext";
+import { useChallengeStore } from "@/store/challengeStore";
 import { typeActivity } from "@/types";
+import ScoreSetter from "@/components/ScoreSetter";
 
-export default function TextQuiz({ activity }:{ activity: typeActivity }) {
+export default function TextQuiz({
+  activity,
+  onNext,
+}: {
+  activity: typeActivity;
+  onNext: () => void;
+}) {
+  const { addPagePoints, points } = useChallengeStore();
   const [answer, setAnswer] = useState<string>("");
-  const [submitted, setSubmitted] = useState<boolean>(false);
+  const [isActivityCompleted, setIsActivityCompleted] = useState(false);
+
+  const [scoreSelected, setScoreSelected] = useState(false);
   const { company } = useTheme();
-  
+  console.log(activity,"Activity page +++", points, "points");
+
+  const Score = activity.on_app ? points : activity.score;
+
+  const handleActivityCompleted = () => {
+    setIsActivityCompleted(true);
+  };
+  const handleCloseModal = () => {
+    setIsActivityCompleted(false);
+    setScoreSelected(true);
+  };
+
+  const handleSubmit = () => {
+    addPagePoints(Score);
+    onNext();
+  };
 
   return (
     <View style={styles.container}>
@@ -18,7 +44,6 @@ export default function TextQuiz({ activity }:{ activity: typeActivity }) {
         source={require("@/assets/images/bgonboarding.png")}
         style={styles.backgroundImage}
       />
-
 
       {/* Logo in the top right corner */}
       <View style={styles.logoContainer}>
@@ -42,9 +67,7 @@ export default function TextQuiz({ activity }:{ activity: typeActivity }) {
           </View>
 
           {/* Subtitle */}
-          <Text style={styles.subtitle}>
-            {activity.prompt}
-          </Text>
+          <Text style={styles.subtitle}>{activity.prompt}</Text>
 
           {/* Answer Input */}
           <TextInput
@@ -61,11 +84,20 @@ export default function TextQuiz({ activity }:{ activity: typeActivity }) {
 
           {/* Submit / Assign Score Button */}
           <View style={styles.buttonContainer}>
-            <ThemedButton
-              onPress={() => setSubmitted(true)}
-              title={submitted ? "Assign Score" : "Submit"}
-            />
+            {activity.on_app ? (
+              scoreSelected ? (
+                <ThemedButton title="Submit" onPress={handleSubmit} />
+              ) : (
+                <ThemedButton
+                  title="Assign Score"
+                  onPress={handleActivityCompleted}
+                />
+              )
+            ) : (
+              <ThemedButton title="Submit" onPress={handleSubmit} />
+            )}
           </View>
+          <ScoreSetter isVisible={isActivityCompleted} onClose={handleCloseModal} />
         </View>
       </View>
     </View>

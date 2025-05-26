@@ -9,11 +9,15 @@ import {
 } from "react-native";
 import { Canvas, Path, Skia, useCanvasRef } from "@shopify/react-native-skia";
 import ThemedButton from "./ThemedButton";
+import ScoreSetter from "./ScoreSetter";
+import { useChallengeStore } from "@/store/challengeStore";
 
-const DrawingBoard = () => {
+const DrawingBoard = ({ activity,onNext}) => {
+  const { addPagePoints, points } = useChallengeStore();
   const canvasRef = useCanvasRef();
   const screenHeight = Dimensions.get("window").height;
-  const [submitted, setSubmitted] = useState(false);
+ const [scoreSelected, setScoreSelected] = useState(false);
+ const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [mode, setMode] = useState("pen");
   const [paths, setPaths] = useState([]);
   const [currentPoints, setCurrentPoints] = useState([]);
@@ -21,12 +25,21 @@ const DrawingBoard = () => {
 
   const color = mode === "pen" ? "black" : "white";
   const strokeWidth = mode === "pen" ? 4 : 10;
+  const Score = activity.on_app ? points : activity.score;
 
   const handleTouchStart = (evt) => {
     const { locationX, locationY } = evt.nativeEvent;
     const newPoints = [[locationX, locationY]];
     currentPointsRef.current = newPoints;
     setCurrentPoints(newPoints);
+  };
+   const handleCloseModal = () => {
+    setIsActivityCompleted(false);
+    setScoreSelected(true);
+  };
+   const handleActivityCompleted = () => {
+    setIsActivityCompleted(true);
+   
   };
 
   const handleTouchMove = (evt) => {
@@ -68,6 +81,8 @@ const DrawingBoard = () => {
       Alert.alert("Error", "Could not export canvas.");
       console.error(err);
     }
+    onNext();
+    addPagePoints(Score);
   };
 
   // Build current path
@@ -153,11 +168,20 @@ const DrawingBoard = () => {
           <Text>Restart</Text>
         </TouchableOpacity>
 
-        {/* <ThemedButton title="Submit" onPress={handleSubmit} /> */}
-        <ThemedButton
-          onPress={() => setSubmitted(true)}
-          title={submitted ? "Assign Score" : "Submit"}
-        />
+     
+       {activity.on_app ? (
+              scoreSelected ? (
+                <ThemedButton title="Submit" onPress={handleSubmit} />
+              ) : (
+                <ThemedButton
+                  title="Assign Score"
+                  onPress={handleActivityCompleted}
+                />
+              )
+            ) : (
+              <ThemedButton title="Submit" onPress={handleSubmit} />
+            )}
+            <ScoreSetter isVisible={isActivityCompleted} onClose={handleCloseModal} />
       </View>
     </View>
   );

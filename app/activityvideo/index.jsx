@@ -1,76 +1,69 @@
-import React, { useState,  useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-} from "react-native";
-import { Camera } from "expo-camera";
-import { Video } from "expo-av";
-import { useRouter } from "expo-router";
-import { useTheme } from "@/context/ThemeContext";
 import ThemedButton from "@/components/ThemedButton";
+import { useTheme } from "@/context/ThemeContext";
+import { Button } from "@react-navigation/elements";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import React, { useRef, useState } from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export default function VideoPage({activity}) {
-  const [hasPermission, setHasPermission] = useState(null);
-  const [cameraRef, setCameraRef] = useState(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [videoUri, setVideoUri] = useState(null);
+import { Video } from "expo-av";
+import { useChallengeStore } from "@/store/challengeStore";
+
+export default function VideoPage({ activity }) {
+  const { currentActivityPoints } = useChallengeStore();
+  const [permission, requestPermission] = useCameraPermissions();
+  const [video, setVideo] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const router = useRouter();
+  const [isRecording, setIsRecording] = useState(false);
+  const cameraRef = useRef(null);
   const { company } = useTheme();
+console.log(currentActivityPoints, "currentActivityPoints");
+  if (!permission) return null;
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === "granted");
-    })();
-  }, []);
-
-  const startCamera = () => {
-    setIsCameraOpen(true);
-    setVideoUri(null);
-  };
+  if (!permission.granted) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ textAlign: "center" }}>
+          We need your permission to use the camera
+        </Text>
+        <Button onPress={requestPermission} title="Grant permission" />
+      </View>
+    );
+  }
 
   const startRecording = async () => {
-    if (cameraRef) {
-      setIsRecording(true);
-      const video = await cameraRef.recordAsync();
-      setVideoUri(video.uri);
-      setIsRecording(false);
-      setIsCameraOpen(false);
+    if (cameraRef.current) {
+      try {
+        setIsRecording(true);
+        const videoData = await cameraRef.current.recordAsync();
+        setVideo(videoData.uri);
+        setIsRecording(false);
+        setIsCameraOpen(false);
+      } catch (error) {
+        console.error("Recording failed:", error);
+        setIsRecording(false);
+      }
     }
   };
 
   const stopRecording = () => {
-    if (cameraRef && isRecording) {
-      cameraRef.stopRecording();
+    if (cameraRef.current) {
+      cameraRef.current.stopRecording();
     }
   };
 
   const retakeVideo = () => {
-    setVideoUri(null);
+    setVideo(null);
     setSubmitted(false);
-    startCamera();
+    setIsCameraOpen(true);
   };
 
   const handleSubmit = () => {
     setSubmitted(true);
   };
 
-  if (hasPermission === null) {
-    return <Text>Requesting permission...</Text>;
-  }
-
-  if (hasPermission === false) {
-    return <Text>No access to camera</Text>;
-  }
-
   return (
     <View style={styles.container}>
-      {/* Top logo */}
       <View style={styles.logoWrapper}>
         <Image
           source={company.fulllogo}
@@ -79,95 +72,72 @@ export default function VideoPage({activity}) {
         />
       </View>
 
-      {/* Background image */}
       <Image
         source={require("@/assets/images/bgonboarding.png")}
         style={styles.backgroundImg}
         resizeMode="cover"
       />
 
-      <View style={styles.inner}>
-        {videoUri ? (
-          <>
-            <Text style={styles.title}>Happy with your video?</Text>
-            <Video
-              source={{ uri: videoUri }}
-              style={styles.videoPreview}
-              useNativeControls
-              resizeMode="contain"
-              shouldPlay
-              isLooping
+      {video ? (
+        <View style={styles.inner}>
+          <Text style={styles.title}>Happy with your video?</Text>
+          <Video
+            source={{ uri: video }}
+            style={styles.photoPreview}
+            useNativeControls
+            resizeMode="contain"
+            shouldPlay
+          />
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.outlineBtn} onPress={retakeVideo}>
+              <Text style={styles.outlineText}>Retake</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              onPress={submitted ? undefined : handleSubmit}
+            >
+              <Text style={styles.primaryText}>
+                {submitted ? "Assign Score" : "Submit"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : isCameraOpen ? (
+        <View style={styles.fullScreenCameraContainer}>
+          <CameraView
+            ref={cameraRef}
+            style={styles.fullScreenCamera}
+            facing="front"
+          />
+          <View style={styles.captureContainer}>
+            <TouchableOpacity
+              style={[
+                styles.shutterButton,
+                { backgroundColor: isRecording ? "red" : "white" },
+              ]}
+              onPress={isRecording ? stopRecording : startRecording}
             />
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.outlineBtn} onPress={retakeVideo}>
-                <Text style={styles.outlineText}>Retake</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.primaryBtn}
-                onPress={submitted ? undefined : handleSubmit}
-              >
-                <Text style={styles.primaryText}>
-                  {submitted ? "Assign Score" : "Submit"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <>
-            <Text style={styles.title}>Take a video!</Text>
-            <View style={styles.cameraWrapper}>
-              {isCameraOpen ? (
-                <Camera
-                  ref={(ref) => setCameraRef(ref)}
-                  type={Camera.Constants.Type.front}
-                  style={styles.camera}
-                />
-              ) : (
-                <Image
-                  source={require("@/assets/images/TakeVideo.png")}
-                  style={styles.placeholder}
-                  resizeMode="contain"
-                />
-              )}
-            </View>
-
-            {isCameraOpen ? (
-              isRecording ? (
-                <TouchableOpacity
-                  style={styles.primaryBtn}
-                  onPress={stopRecording}
-                >
-                  <Text style={styles.primaryText}>Stop Recording</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={styles.primaryBtn}
-                  onPress={startRecording}
-                >
-                  <Text style={styles.primaryText}>Start Recording</Text>
-                </TouchableOpacity>
-              )
-            ) : (
-              <View style={styles.descriptionWrapper}>
-                <Text style={styles.description}>
-                  {activity.prompt}
-                </Text>
-                <ThemedButton
-                  title="Take Video"
-                  onPress={() => router.push("/video")}
-                />
-              </View>
-            )}
-          </>
-        )}
-      </View>
-
-      {/* Next Activity Button */}
-      <ThemedButton
-        title="Next Activity"
-        onPress={() => router.push("/feedback")}
-        style={styles.nextBtn}
-      />
+          </View>
+        </View>
+      ) : (
+        <View style={styles.inner}>
+          <Text style={styles.title}>Record a video!</Text>
+          <View style={styles.cameraWrapper}>
+            <Image
+              source={require("@/assets/images/TakePhoto.png")}
+              style={styles.placeholder}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.descriptionWrapper}>
+            <Text style={styles.description}>{activity.prompt} </Text>
+            <ThemedButton
+              title="Record Video"
+              onPress={() => setIsCameraOpen(true)}
+            />
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -205,8 +175,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#414264",
     marginBottom: 20,
     textAlign: "center",
@@ -218,14 +187,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: 20,
   },
-  camera: {
-    flex: 1,
-  },
   placeholder: {
     width: "100%",
     height: "100%",
   },
-  videoPreview: {
+  photoPreview: {
     width: "100%",
     height: 400,
     borderRadius: 12,
@@ -237,7 +203,8 @@ const styles = StyleSheet.create({
   },
   description: {
     color: "#414264",
-    marginBottom: 28,
+    fontSize: 16,
+    marginBottom: 38,
     textAlign: "center",
   },
   buttonRow: {
@@ -266,11 +233,26 @@ const styles = StyleSheet.create({
   outlineText: {
     color: "#1e293b",
   },
-  nextBtn: {
+  fullScreenCameraContainer: {
+    flex: 1,
+    width: "100%",
+    position: "relative",
+  },
+  fullScreenCamera: {
+    flex: 1,
+  },
+  captureContainer: {
     position: "absolute",
-    bottom: 24,
-    right: 24,
-    zIndex: 10,
-    fontWeight: "600",
+    bottom: 40,
+    alignSelf: "center",
+    zIndex: 20,
+  },
+  shutterButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#FFF",
+    borderWidth: 5,
+    borderColor: "#AAA",
   },
 });
