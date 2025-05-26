@@ -1,19 +1,46 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
-import { Ionicons, Feather } from "@expo/vector-icons"; 
-import Mapprogress from "@/assets/images/Mapprogress.png";
 import TukOnMeLogo from "@/assets/icons/tukonmefull.png";
 import StartActivity from "@/components/StartActivity";
 import ThemedButton from "@/components/ThemedButton";
+import { useChallengeStore } from "@/store/challengeStore";
 import { useTheme } from "@/context/ThemeContext";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
+import MapView, { Marker } from "react-native-maps";
 
 export default function MapPage() {
+  const { activeChallenge } = useChallengeStore();
   const { company } = useTheme();
   const [progress, setProgress] = useState(45);
   const [timer, setTimer] = useState(60);
   const [showStartActivity, setShowStartActivity] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
 
   const totalDots = 6;
+
+  const extractTaskLocations = (activeChallenge) => {
+    if (!activeChallenge?.tasks) return [];
+
+    return activeChallenge.tasks
+      .map((task) => {
+        const firstActivity = task.activities?.[0];
+        if (
+          firstActivity?.location_lat != null &&
+          firstActivity?.location_lng != null
+        ) {
+          return {
+            id: task.id,
+            latitude: firstActivity.location_lat,
+            longitude: firstActivity.location_lng,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  };
+
+  const markers = extractTaskLocations(activeChallenge);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -31,24 +58,44 @@ export default function MapPage() {
   };
 
   const handleExit = () => {
-    navigation.navigate("Home");
-  };
-
-  const handleMapClick = () => {
-    setShowStartActivity(true);
+    router.push("/");
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.mapImageContainer}
-        onPress={handleMapClick}
+      <MapView
+        style={styles.map}
+        initialRegion={{
+           latitude: markers[0].latitude,
+      longitude: markers[0].longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }}
       >
-        <Image source={Mapprogress} style={styles.mapImage} />
-      </TouchableOpacity>
+        {markers.map((marker, index) => (
+          <Marker
+            key={marker.id}
+            coordinate={{
+              latitude: marker.latitude,
+              longitude: marker.longitude,
+            }}
+            title={`Task ${index + 1}`}
+            description="Activity Location"
+            pinColor={company.theme.primary}
+            onPress={() => {
+              setSelectedTaskId(marker.id);
+              // console.log(marker.id);
+              setShowStartActivity(true);
+            }}
+          />
+        ))}
+      </MapView>
 
-      {showStartActivity && (
-        <StartActivity onClose={() => setShowStartActivity(false)} />
+      {showStartActivity && selectedTaskId && (
+        <StartActivity
+          onClose={() => setShowStartActivity(false)}
+          ID={selectedTaskId}
+        />
       )}
 
       <View style={styles.header}>
@@ -92,7 +139,6 @@ export default function MapPage() {
           </View>
         </View>
 
-       
         <ThemedButton
           title=" Re-center"
           style={styles.recenterButton}
@@ -132,14 +178,6 @@ export default function MapPage() {
           style={styles.logoImage}
         />
       </View>
-
-      {/* <View style={styles.nextButtonContainer}>
-        <ThemedButton
-          style={styles.nextButton}
-          onPress={() => router.push("/activityoptions")}
-          title="Next"
-        />
-      </View> */}
     </View>
   );
 }
@@ -160,6 +198,11 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     resizeMode: "cover",
+  },
+  map: {
+    width: "100%",
+    height: "100%",
+    position: "absolute",
   },
   header: {
     position: "absolute",
@@ -265,7 +308,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    
   },
   timerWarning: {
     backgroundColor: "#fce4e4",
@@ -311,5 +353,4 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 1,
   },
- 
 });

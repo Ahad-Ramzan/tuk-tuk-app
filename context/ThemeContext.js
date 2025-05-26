@@ -5,7 +5,7 @@ import { companies } from "../constants/companies";
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [companyKey, setCompanyKey] = useState("beta"); // default
+  const [companyKey, setCompanyKey] = useState("alpha"); // default
 
   const value = {
     company: companies[companyKey],
