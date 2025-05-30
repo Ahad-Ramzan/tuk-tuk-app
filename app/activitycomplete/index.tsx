@@ -13,11 +13,17 @@ export default function ActivityPage({ activity,onNext }: { activity: typeActivi
   const { company } = useTheme();
 const Score = activity.on_app ? points : activity.score;
 
+ const payLoad = {
+  activity: activity.id,
+  latitude: activity.location_lat,
+  longitude: activity.location_lng,
+};
+
+if (activity.on_app) {
+  payLoad.driver_score = points;
+}
   const handleActivityCompleted = () => {
     setIsActivityCompleted(true);
-     
-     
-
   };
 
   const handleCloseModal = () => {

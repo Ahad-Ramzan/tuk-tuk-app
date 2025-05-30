@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Image, StyleSheet, Text, TextInput, View } from "react-native";
 
+import ScoreSetter from "@/components/ScoreSetter";
 import ThemedButton from "@/components/ThemedButton"; // Imported ThemedButton
 import { useTheme } from "@/context/ThemeContext";
+import { postChallenge } from "@/services/api";
 import { useChallengeStore } from "@/store/challengeStore";
 import { typeActivity } from "@/types";
-import ScoreSetter from "@/components/ScoreSetter";
 
+ type PayLoad = {
+    activity: number;
+    latitude: number;
+    longitude: number;
+    answer: string;
+    driver_score?: number;
+  };
 export default function TextQuiz({
   activity,
   onNext,
@@ -20,9 +28,18 @@ export default function TextQuiz({
 
   const [scoreSelected, setScoreSelected] = useState(false);
   const { company } = useTheme();
-  console.log(activity,"Activity page +++", points, "points");
 
   const Score = activity.on_app ? points : activity.score;
+  const payLoad:PayLoad = {
+    activity: activity.id,
+    latitude: activity.location_lat,
+    longitude: activity.location_lng,
+    answer: answer,
+  };
+
+  if (activity.on_app) {
+    payLoad.driver_score = points;
+  }
 
   const handleActivityCompleted = () => {
     setIsActivityCompleted(true);
@@ -32,9 +49,14 @@ export default function TextQuiz({
     setScoreSelected(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     addPagePoints(Score);
-    onNext();
+    try {
+      await postChallenge(payLoad);
+      onNext();
+    } catch (error) {
+      console.error("Error submitting challenge:", error);
+    }
   };
 
   return (
@@ -97,7 +119,10 @@ export default function TextQuiz({
               <ThemedButton title="Submit" onPress={handleSubmit} />
             )}
           </View>
-          <ScoreSetter isVisible={isActivityCompleted} onClose={handleCloseModal} />
+          <ScoreSetter
+            isVisible={isActivityCompleted}
+            onClose={handleCloseModal}
+          />
         </View>
       </View>
     </View>

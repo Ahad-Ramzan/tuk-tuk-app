@@ -6,7 +6,7 @@ import ThemedButton from "@/components/ThemedButton";
 import { useChallengeStore } from "@/store/challengeStore";
 import { router } from "expo-router";
 
-const ActivityPrompt = ({ onClose, ID }) => {
+const ActivityPrompt = ({ onClose, ID,onComplete }) => {
   const [showError, setShowError] = useState(false);
   const { activeChallenge, setActiveTask } = useChallengeStore();
   useEffect(() => {
@@ -16,12 +16,11 @@ const ActivityPrompt = ({ onClose, ID }) => {
 
       if (task) {
         setActiveTask(task.activities);
-        console.log(`Activities of task ${taskId}:`, task.activities);
       } else {
-        console.log(`Task with ID ${taskId} not found.`);
+        setShowError(true);
       }
     }
-  }, [activeChallenge]);
+  }, [activeChallenge, ID, setActiveTask]);
 
   return (
     <View style={styles.overlay}>
@@ -48,6 +47,7 @@ const ActivityPrompt = ({ onClose, ID }) => {
           style={styles.startButton}
           onPress={() => router.push("/taskmanager")}
           title="Start activity"
+          
         />
       </View>
 

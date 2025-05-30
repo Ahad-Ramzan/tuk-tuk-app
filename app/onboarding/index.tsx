@@ -30,14 +30,12 @@ export default function SlideshowScreen() {
     null
   );
   const [slides, setSlides] = useState<typeSlide[]>([]);
-  // console.log("challengeData", challengeData);
 
   useEffect(() => {
     if (id && challenges.length) {
       const foundChallenge = challenges.find((ch) => ch.id === Number(id));
 
       if (foundChallenge) {
-        console.log(foundChallenge);
         setChallengeData(foundChallenge);
         setActiveChallenge(foundChallenge);
       }
@@ -60,7 +58,7 @@ export default function SlideshowScreen() {
         setSlides(generatedSlides);
       }
     }
-  }, [id, challenges]);
+  }, [id, challenges, setActiveChallenge]);
 
   if (!challengeData) {
     return (
@@ -119,7 +117,7 @@ export default function SlideshowScreen() {
 
       {/* Main Content */}
       <View style={styles.content}>
-        <Text style={styles.paragraph}>{slides[currentIndex].paragraph}</Text>
+        <Text style={styles.paragraph}>{slides[currentIndex]?.paragraph}</Text>
 
         <Image
           source={slides[currentIndex].image}

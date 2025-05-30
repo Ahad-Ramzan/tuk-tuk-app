@@ -1,23 +1,32 @@
-import React, { useRef, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  Alert,
-} from "react-native";
-import { Canvas, Path, Skia, useCanvasRef } from "@shopify/react-native-skia";
-import ThemedButton from "./ThemedButton";
-import ScoreSetter from "./ScoreSetter";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useChallengeStore } from "@/store/challengeStore";
 
-const DrawingBoard = ({ activity,onNext}) => {
+import {
+  Canvas,
+  ImageFormat,
+  Path,
+  Skia,
+  useCanvasRef,
+} from "@shopify/react-native-skia";
+import * as FileSystem from "expo-file-system";
+
+import React, { useRef, useState } from "react";
+import {
+  Alert,
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import ScoreSetter from "./ScoreSetter";
+import ThemedButton from "./ThemedButton";
+
+const DrawingBoard = ({ activity, onNext }) => {
   const { addPagePoints, points } = useChallengeStore();
   const canvasRef = useCanvasRef();
-  const screenHeight = Dimensions.get("window").height;
- const [scoreSelected, setScoreSelected] = useState(false);
- const [isActivityCompleted, setIsActivityCompleted] = useState(false);
+  const [scoreSelected, setScoreSelected] = useState(false);
+  const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [mode, setMode] = useState("pen");
   const [paths, setPaths] = useState([]);
   const [currentPoints, setCurrentPoints] = useState([]);
@@ -33,13 +42,12 @@ const DrawingBoard = ({ activity,onNext}) => {
     currentPointsRef.current = newPoints;
     setCurrentPoints(newPoints);
   };
-   const handleCloseModal = () => {
+  const handleCloseModal = () => {
     setIsActivityCompleted(false);
     setScoreSelected(true);
   };
-   const handleActivityCompleted = () => {
+  const handleActivityCompleted = () => {
     setIsActivityCompleted(true);
-   
   };
 
   const handleTouchMove = (evt) => {
@@ -70,22 +78,71 @@ const DrawingBoard = ({ activity,onNext}) => {
 
   const handleSubmit = async () => {
     try {
-      const image = await canvasRef.current?.makeImageSnapshot();
-      const base64 = image.encodeToBase64("png");
-      console.log("Base64 image data:", base64);
-      Alert.alert(
-        "Canvas exported",
-        "Image exported as base64 (check console)"
+      if (!canvasRef.current || !activity) {
+        Alert.alert("Error", "Missing canvas or activity data.");
+        return;
+      }
+
+      const image = canvasRef.current.makeImageSnapshot();
+      if (!image) {
+        Alert.alert("Error", "Failed to capture image snapshot.");
+        return;
+      }
+
+      const base64 = image.encodeToBase64(ImageFormat.PNG);
+      const fileUrl = FileSystem.documentDirectory + "drawing.png";
+
+      await FileSystem.writeAsStringAsync(fileUrl, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const fileUri = fileUrl;
+      const fileName = fileUri.split("/").pop();
+      const fileType = fileName.split(".").pop();
+
+      const formData = new FormData();
+
+      formData.append("activity", activity.id);
+    formData.append("latitude", activity.location_lat);
+    formData.append("longitude", activity.location_lng);
+      formData.append("file", {
+      uri: fileUri,
+      name: fileName,
+      type: `image/${fileType}`,
+    });
+
+
+
+      if (activity.on_app) {
+        formData.append("driver_score", Score);
+      }
+      const token = await AsyncStorage.getItem("AUTH_TOKEN");
+
+      await fetch(
+        "https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/",
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "multipart/form-data",
+            Authorization: `token ${token}`,
+            "X-CSRFTOKEN":
+              "UWHYzLJQNZC5K3SdzWixpRZNpZtzPxY6CO2OUCcr3wkxdGMW1TcCpmPv5X5hAg3A",
+          },
+          body: formData,
+        }
       );
-    } catch (err) {
-      Alert.alert("Error", "Could not export canvas.");
-      console.error(err);
+
+      addPagePoints(Score);
+      onNext();
+    } catch (error) {
+      console.error("Submission failed:", error);
+      Alert.alert(
+        "Error",
+        "Something went wrong while submitting. Please try again."
+      );
     }
-    onNext();
-    addPagePoints(Score);
   };
 
-  // Build current path
   const currentPath = Skia.Path.Make();
   if (
     currentPoints.length > 0 &&
@@ -168,20 +225,22 @@ const DrawingBoard = ({ activity,onNext}) => {
           <Text>Restart</Text>
         </TouchableOpacity>
 
-     
-       {activity.on_app ? (
-              scoreSelected ? (
-                <ThemedButton title="Submit" onPress={handleSubmit} />
-              ) : (
-                <ThemedButton
-                  title="Assign Score"
-                  onPress={handleActivityCompleted}
-                />
-              )
-            ) : (
-              <ThemedButton title="Submit" onPress={handleSubmit} />
-            )}
-            <ScoreSetter isVisible={isActivityCompleted} onClose={handleCloseModal} />
+        {activity.on_app ? (
+          scoreSelected ? (
+            <ThemedButton title="Submit" onPress={handleSubmit} />
+          ) : (
+            <ThemedButton
+              title="Assign Score"
+              onPress={handleActivityCompleted}
+            />
+          )
+        ) : (
+          <ThemedButton title="Submit" onPress={handleSubmit} />
+        )}
+        <ScoreSetter
+          isVisible={isActivityCompleted}
+          onClose={handleCloseModal}
+        />
       </View>
     </View>
   );

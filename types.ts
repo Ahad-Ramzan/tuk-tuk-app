@@ -53,6 +53,7 @@ export type typeActivity = {
   choice_3: string;
   choice_4: string;
   task: number;
+  driver_score?: number;
 };
 
 export type typeFoundChallenge = {

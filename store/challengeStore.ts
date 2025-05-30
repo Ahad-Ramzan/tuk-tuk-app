@@ -17,6 +17,8 @@ interface ChallengeState {
 
   points: number;
   setPoints: (newScore: number) => void;
+  completedTaskIds: number;
+  setCompletedTaskIds: () => void;
 }
 
 export const useChallengeStore = create<ChallengeState>((set) => ({
@@ -46,8 +48,18 @@ export const useChallengeStore = create<ChallengeState>((set) => ({
       currentActivityPoints: 0,
       grandTotalPoints: 0,
       points: 0,
+      completedTaskIds: 0
     }),
 
   points: 0,
   setPoints: (newScore) => set({ points: newScore }),
+
+   completedTaskIds: 0, // just a counter
+  setCompletedTaskIds: () =>
+    set((state) => ({
+      completedTaskIds: state.completedTaskIds + 1,
+    })),
+   
+
+    
 }));

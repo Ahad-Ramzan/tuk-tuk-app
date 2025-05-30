@@ -8,7 +8,7 @@ import { Image, StyleSheet, Text, View } from "react-native";
 export default function DrawingPage({ activity ,onNext}: { activity: typeActivity, onNext: () => void }) {
   const [step, setStep] = useState(1);
   const { company } = useTheme();
-  console.log(activity, "Drawing activity=======++++++++");
+
   return (
     <View style={styles.container}>
       {/* Background Image */}

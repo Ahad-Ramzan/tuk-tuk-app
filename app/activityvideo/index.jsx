@@ -1,65 +1,164 @@
+import ScoreSetter from "@/components/ScoreSetter";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
-import { Button } from "@react-navigation/elements";
-import { CameraView, useCameraPermissions } from "expo-camera";
-import React, { useRef, useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
-import { Video } from "expo-av";
 import { useChallengeStore } from "@/store/challengeStore";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  CameraView,
+  useCameraPermissions,
+  useMicrophonePermissions,
+} from "expo-camera";
+import { CameraType, useVideoPlayer, VideoView } from "expo-video";
+import React, { useRef, useState } from "react";
+import {
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-export default function VideoPage({ activity }) {
-  const { currentActivityPoints } = useChallengeStore();
+export default function VideoPage({ activity, onNext }) {
+  const [facing, setFacing] = useState(CameraType?.back);
   const [permission, requestPermission] = useCameraPermissions();
-  const [video, setVideo] = useState(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [microphonePermission, requestMicrophonePermission] =
+    useMicrophonePermissions();
+  const [recordedVideo, setRecordedVideo] = useState(null);
+  const [scoreSelected, setScoreSelected] = useState(false);
+  const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const { addPagePoints, points } = useChallengeStore();
   const cameraRef = useRef(null);
   const { company } = useTheme();
-console.log(currentActivityPoints, "currentActivityPoints");
-  if (!permission) return null;
+  const Score = activity.on_app ? points : activity.score;
+  const player = useVideoPlayer(recordedVideo, (player) => {
+    player.loop = true;
+    player.muted = false;
+  });
 
-  if (!permission.granted) {
+  if (!permission || !microphonePermission) {
+    return <View />;
+  }
+
+  if (!permission.granted || !microphonePermission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: "center" }}>
-          We need your permission to use the camera
+      <View style={cameraStyles.permissionContainer}>
+        <Ionicons
+          name={!permission.granted ? "camera-outline" : "mic-outline"}
+          size={64}
+          color="#888"
+        />
+        <Text style={cameraStyles.permissionTitle}>
+          {!permission.granted
+            ? "Camera Access Needed"
+            : "Microphone Access Needed"}
         </Text>
-        <Button onPress={requestPermission} title="Grant permission" />
+        <Text style={cameraStyles.permissionMessage}>
+          {!permission.granted
+            ? "To use this feature, we need access to your camera. Please grant permission."
+            : "To record video with audio, we need access to your microphone. Please grant permission."}
+        </Text>
+        <TouchableOpacity
+          onPress={
+            !permission.granted
+              ? requestPermission
+              : requestMicrophonePermission
+          }
+          style={cameraStyles.permissionButton}
+        >
+          <Text style={cameraStyles.permissionButtonText}>
+            {!permission.granted
+              ? "Grant Camera Access"
+              : "Grant Microphone Access"}
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
+  const handleCloseModal = () => {
+    setIsActivityCompleted(false);
+    setScoreSelected(true);
+  };
+  const handleActivityCompleted = () => {
+    setIsActivityCompleted(true);
+  };
+
   const startRecording = async () => {
-    if (cameraRef.current) {
+    if (cameraRef.current && !isRecording) {
       try {
         setIsRecording(true);
-        const videoData = await cameraRef.current.recordAsync();
-        setVideo(videoData.uri);
-        setIsRecording(false);
-        setIsCameraOpen(false);
+        const video = await cameraRef.current.recordAsync({
+          quality: "720p",
+          maxDuration: 20,
+          mute: false,
+        });
+        setRecordedVideo(video.uri);
       } catch (error) {
-        console.error("Recording failed:", error);
+        console.error("Error recording video:", error);
+        Alert.alert("Error", "Failed to record video");
+      } finally {
         setIsRecording(false);
       }
     }
   };
 
   const stopRecording = () => {
-    if (cameraRef.current) {
+    if (cameraRef.current && isRecording) {
       cameraRef.current.stopRecording();
     }
   };
 
   const retakeVideo = () => {
-    setVideo(null);
-    setSubmitted(false);
-    setIsCameraOpen(true);
+    setRecordedVideo(null);
+    if (player) {
+      player.pause();
+    }
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
+  const handleSubmit = async () => {
+    if (!recordedVideo) return;
+    const fileUri = recordedVideo;
+    const fileName = fileUri.split("/").pop();
+    const fileType = fileName.split(".").pop();
+    const formData = new FormData();
+    formData.append("activity", activity.id);
+    formData.append("latitude", activity.location_lat);
+    formData.append("longitude", activity.location_lng);
+    formData.append("file", {
+      uri: fileUri,
+      name: fileName,
+      type: `video/${fileType}`,
+    });
+    if (activity.on_app) {
+      formData.append("driver_score", points);
+    }
+
+    const token = await AsyncStorage.getItem("AUTH_TOKEN");
+
+    try {
+      await fetch(
+        "https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/",
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "multipart/form-data",
+            Authorization: `token ${token}`,
+            "X-CSRFTOKEN":
+              "UWHYzLJQNZC5K3SdzWixpRZNpZtzPxY6CO2OUCcr3wkxdGMW1TcCpmPv5X5hAg3A",
+          },
+          body: formData,
+        }
+      );
+      addPagePoints(Score);
+      onNext();
+    } catch (error) {
+      console.error("❌ Upload failed:", error.response?.data || error.message);
+    }
   };
 
   return (
@@ -78,46 +177,88 @@ console.log(currentActivityPoints, "currentActivityPoints");
         resizeMode="cover"
       />
 
-      {video ? (
+      {recordedVideo ? (
         <View style={styles.inner}>
           <Text style={styles.title}>Happy with your video?</Text>
-          <Video
-            source={{ uri: video }}
+          <VideoView
             style={styles.photoPreview}
-            useNativeControls
-            resizeMode="contain"
+            player={player}
+            allowsFullscreen={false}
+            allowsPictureInPicture={false}
+            contentFit="contain"
             shouldPlay
+            showsTimecodes={false}
+            requiresLinearPlayback={true}
+            nativeControls={false}
           />
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.outlineBtn} onPress={retakeVideo}>
               <Text style={styles.outlineText}>Retake</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.primaryBtn}
-              onPress={submitted ? undefined : handleSubmit}
-            >
-              <Text style={styles.primaryText}>
-                {submitted ? "Assign Score" : "Submit"}
-              </Text>
-            </TouchableOpacity>
+            {activity.on_app ? (
+              scoreSelected ? (
+                <ThemedButton title="Submit" onPress={handleSubmit} />
+              ) : (
+                <ThemedButton
+                  title="Assign Score"
+                  onPress={handleActivityCompleted}
+                />
+              )
+            ) : (
+              <TouchableOpacity
+                style={styles.primaryBtn}
+                onPress={handleSubmit}
+              >
+                <Text style={styles.primaryText}>Submit</Text>
+              </TouchableOpacity>
+            )}
           </View>
+          <ScoreSetter
+            isVisible={isActivityCompleted}
+            onClose={handleCloseModal}
+          />
         </View>
       ) : isCameraOpen ? (
-        <View style={styles.fullScreenCameraContainer}>
+        <View style={styles.container1}>
           <CameraView
+            style={styles.camera}
+            facing={facing}
             ref={cameraRef}
-            style={styles.fullScreenCamera}
-            facing="front"
-          />
-          <View style={styles.captureContainer}>
-            <TouchableOpacity
-              style={[
-                styles.shutterButton,
-                { backgroundColor: isRecording ? "red" : "white" },
-              ]}
-              onPress={isRecording ? stopRecording : startRecording}
-            />
-          </View>
+            mode="video"
+          >
+            {/* <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.flipButton}
+                onPress={toggleCameraFacing}
+              >
+                <Text style={styles.flipText}>Flip Camera</Text>
+              </TouchableOpacity>
+            </View> */}
+
+            <View style={styles.recordingControls}>
+              {isRecording && (
+                <View style={styles.recordingIndicator}>
+                  <View style={styles.redDot} />
+                  <Text style={styles.recordingText}>Recording...</Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={[
+                  styles.recordButton,
+                  isRecording && styles.recordButtonActive,
+                ]}
+                onPress={isRecording ? stopRecording : startRecording}
+              >
+                <View
+                  style={[
+                    styles.recordButtonInner,
+                    isRecording && styles.recordButtonInnerActive,
+                  ]}
+                />
+              </TouchableOpacity>
+            </View>
+          </CameraView>
         </View>
       ) : (
         <View style={styles.inner}>
@@ -148,6 +289,86 @@ const styles = StyleSheet.create({
     backgroundColor: "#EEF0F3",
     position: "relative",
   },
+  container1: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "black",
+  },
+  camera: {
+    flex: 1,
+  },
+  buttonContainer: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "transparent",
+    margin: 20,
+  },
+  flipButton: {
+    flex: 1,
+    alignSelf: "flex-end",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    padding: 10,
+    borderRadius: 5,
+  },
+  flipText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+  },
+  recordingControls: {
+    position: "absolute",
+    bottom: 50,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  recordingIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  redDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "red",
+    marginRight: 8,
+  },
+  recordingText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  recordButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 4,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  recordButtonActive: {
+    borderColor: "red",
+  },
+  recordButtonInner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "red",
+  },
+  recordButtonInnerActive: {
+    borderRadius: 8,
+    width: 40,
+    height: 40,
+  },
+
   logoWrapper: {
     position: "absolute",
     top: 40,
@@ -192,7 +413,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   photoPreview: {
-    width: "100%",
+    width: 600,
     height: 400,
     borderRadius: 12,
     marginBottom: 20,
@@ -254,5 +475,39 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     borderWidth: 5,
     borderColor: "#AAA",
+  },
+});
+
+const cameraStyles = StyleSheet.create({
+  permissionContainer: {
+    flex: 1,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  permissionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginVertical: 12,
+    color: "#333",
+  },
+  permissionMessage: {
+    fontSize: 16,
+    textAlign: "center",
+    color: "#666",
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  permissionButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  permissionButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "500",
   },
 });

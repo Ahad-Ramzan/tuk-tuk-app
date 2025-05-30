@@ -25,7 +25,6 @@ const ScoreSetter = ({
   const handleSelectScore = (selectedScore: number) => {
     setScore(selectedScore);
     setPoints(selectedScore);
-    console.log(score,"score setter")
   };
 
   const handleResetScore = () => {
@@ -35,7 +34,6 @@ const ScoreSetter = ({
   };
 
   const handleConfirm = () => {
-    // Submit logic here
     onClose();
   };
 

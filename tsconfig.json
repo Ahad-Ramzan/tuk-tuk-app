@@ -16,5 +16,5 @@
     "app/activityphoto/index.tsx",
     "app/activitycomplete/index.tsx",
     "assets/images/index.js"
-, "app/video/index.tsx", "app/index.jsx"  ]
+, "app/video/index.tsx", "app/index.jsx", "app/camera/index.jsx", "app/_layout.tsx"  ]
 }

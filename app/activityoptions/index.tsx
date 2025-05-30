@@ -1,10 +1,12 @@
 import ScoreSetter from "@/components/ScoreSetter";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
+import { postChallenge } from "@/services/api/index";
 import { useChallengeStore } from "@/store/challengeStore";
 import { typeActivity } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+
 import {
   Dimensions,
   Image,
@@ -16,6 +18,12 @@ import {
 
 const screenWidth = Dimensions.get("window").width;
 
+function shuffleOptions(options: string[]) {
+  return options
+    .map((value, index) => ({ value, index }))
+    .sort(() => Math.random() - 0.5);
+}
+
 export default function ActivityOptions({
   activity,
   onNext,
@@ -24,31 +32,61 @@ export default function ActivityOptions({
   onNext: () => void;
 }) {
   const { addPagePoints, points } = useChallengeStore();
+  const [shuffledOptions, setShuffledOptions] = useState<
+    { value: string; index: number }[]
+  >([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [scoreSelected, setScoreSelected] = useState(false);
-
   const { company } = useTheme();
+
   const score = activity.on_app ? points : activity.score;
-  console.log("Activity Options Rendered", activity, score, points);
+
+  useEffect(() => {
+    const originalOptions = [
+      activity.choice_1,
+      activity.choice_2,
+      activity.choice_3,
+      activity.choice_4,
+    ].filter((choice) => typeof choice === "string" && choice.trim() !== "");
+
+    setShuffledOptions(shuffleOptions(originalOptions));
+  }, [activity]);
+
   const handleCloseModal = () => {
     setIsActivityCompleted(false);
     setScoreSelected(true);
   };
+
   const handleActivityCompleted = () => {
     setIsActivityCompleted(true);
     addPagePoints(score);
   };
 
-  const options = [
-    activity.choice_1,
-    activity.choice_2,
-    activity.choice_3,
-    activity.choice_4,
-  ].filter((choice) => typeof choice === "string" && choice.trim() !== "");
+  const handleSubmit = async () => {
+    if (selectedOption === null) return;
 
-  const handleSubmit = () => {
-    onNext();
+    const isCorrect = shuffledOptions[selectedOption].index === 0; // choice_1 is correct
+    const earnedPoints = isCorrect ? score : 0;
+
+    const payLoad = {
+      activity: activity.id,
+      latitude: activity.location_lat,
+      longitude: activity.location_lng,
+      answer: String(selectedOption + 1),
+      ...(activity.on_app ? { driver_score: earnedPoints } : {}),
+    };
+
+    if (isCorrect) {
+      addPagePoints(score);
+    }
+
+    try {
+      await postChallenge(payLoad);
+      onNext();
+    } catch (error) {
+      console.error("Error creating challenge:", error);
+    }
   };
 
   return (
@@ -81,10 +119,10 @@ export default function ActivityOptions({
 
         {/* Options */}
         <View style={styles.optionsContainer}>
-          {options.map((option, index) => (
+          {shuffledOptions.map((option, index) => (
             <OptionCard
               key={index}
-              text={option}
+              text={option.value}
               selected={selectedOption === index}
               onPress={() => setSelectedOption(index)}
             />
@@ -104,12 +142,6 @@ export default function ActivityOptions({
           <ThemedButton title="Submit" onPress={handleSubmit} />
         )}
 
-        {/* <ThemedButton
-          title={submitted ? "Assign Score" : "Submit"}
-          onPress={() =>
-            submitted ? console.log("Assign Score") : setSubmitted(true)
-          }
-        /> */}
         <ScoreSetter
           isVisible={isActivityCompleted}
           onClose={handleCloseModal}

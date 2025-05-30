@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "tuk-tuk",
+    "name": "Tuktuk",
     "slug": "my-app",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/icons/appstore.png",
     "scheme": "tuktuk",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -21,7 +21,7 @@
       },
       "config": {
         "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+          "apiKey": "AIzaSyBYZjc2S9An6EUY9AYRDNjTaY6aUar1Bzs"
         }
       },
       "edgeToEdgeEnabled": true,
@@ -45,6 +45,13 @@
           "recordAudioAndroid": true
         }
       ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
@@ -54,9 +61,7 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ],
-      "expo-video",
-      "react-native-vision-camera"
+      ]
     ],
     "experiments": {
       "typedRoutes": true

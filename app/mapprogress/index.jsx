@@ -1,27 +1,48 @@
 import TukOnMeLogo from "@/assets/icons/tukonmefull.png";
 import StartActivity from "@/components/StartActivity";
 import ThemedButton from "@/components/ThemedButton";
-import { useChallengeStore } from "@/store/challengeStore";
 import { useTheme } from "@/context/ThemeContext";
+import { useChallengeStore } from "@/store/challengeStore";
 import { Feather, Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
 export default function MapPage() {
-  const { activeChallenge } = useChallengeStore();
+  const { activeChallenge, completedTaskIds } = useChallengeStore();
   const { company } = useTheme();
-  const [progress, setProgress] = useState(45);
-  const [timer, setTimer] = useState(60);
+  const [progress, setProgress] = useState();
+
+  const mapRef = useRef(null);
+  const convertToSeconds = (timeString) => {
+    const [hours, minutes, seconds] = timeString.split(":").map(Number);
+    return hours * 3600 + minutes * 60 + seconds;
+  };
+  const [timer, setTimer] = useState(() =>
+    convertToSeconds(activeChallenge?.time_limit || "00:00:00")
+  );
   const [showStartActivity, setShowStartActivity] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(null);
 
   const totalDots = 6;
+  useEffect(() => {
+    if (progress === 100) {
+      router.push("/thankyou");
+    }
+  }, [progress, router]);
+  useEffect(() => {
+    if (activeChallenge?.tasks?.length) {
+      const total = activeChallenge.tasks.length;
+      const percent = Math.round((completedTaskIds / total) * 100);
+      setProgress(percent);
+    }
+  }, [completedTaskIds, activeChallenge]);
 
   const extractTaskLocations = (activeChallenge) => {
     if (!activeChallenge?.tasks) return [];
-
     return activeChallenge.tasks
       .map((task) => {
         const firstActivity = task.activities?.[0];
@@ -46,28 +67,93 @@ export default function MapPage() {
     const interval = setInterval(() => {
       setTimer((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
+
     return () => clearInterval(interval);
   }, []);
 
   const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
+
+    return `${hrs.toString().padStart(2, "0")}:${mins
       .toString()
-      .padStart(2, "0")}`;
+      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   const handleExit = () => {
-    router.push("/");
+    router.push("/camera");
   };
+
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const toRad = (value) => (value * Math.PI) / 180;
+    const R = 6371e3; // meters
+    const φ1 = toRad(lat1);
+    const φ2 = toRad(lat2);
+    const Δφ = toRad(lat2 - lat1);
+    const Δλ = toRad(lon2 - lon1);
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  }
+
+  useEffect(() => {
+    let locationSubscription;
+
+    const startLocationUpdates = async () => {
+      await Location.requestForegroundPermissionsAsync();
+
+      locationSubscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 2000,
+          distanceInterval: 5,
+        },
+        (location) => {
+          const userLoc = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          };
+
+          setCurrentLocation(userLoc);
+          markers.forEach((marker) => {
+            const distance = getDistance(
+              userLoc.latitude,
+              userLoc.longitude,
+              marker.latitude,
+              marker.longitude
+            );
+
+            if (distance < 30 && !showStartActivity) {
+              setSelectedTaskId(marker.id);
+              setShowStartActivity(true);
+            }
+          });
+        }
+      );
+    };
+
+    startLocationUpdates();
+
+    return () => {
+      if (locationSubscription) {
+        locationSubscription.remove();
+      }
+    };
+  }, [markers, showStartActivity]);
 
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={{
-           latitude: markers[0].latitude,
-      longitude: markers[0].longitude,
+          latitude: markers[0]?.latitude || 0,
+          longitude: markers[0]?.longitude || 0,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         }}
@@ -79,16 +165,39 @@ export default function MapPage() {
               latitude: marker.latitude,
               longitude: marker.longitude,
             }}
-            title={`Task ${index + 1}`}
-            description="Activity Location"
-            pinColor={company.theme.primary}
             onPress={() => {
               setSelectedTaskId(marker.id);
-              // console.log(marker.id);
               setShowStartActivity(true);
             }}
-          />
+          >
+            <View style={styles.markerContainer}>
+              <View
+                style={[
+                  styles.markerIcon,
+                  { backgroundColor: company.theme.primary },
+                ]}
+              >
+                <Ionicons name="location-sharp" size={16} color="#fff" />
+              </View>
+              <View style={styles.labelBox}>
+                <Text style={styles.labelText}>{`Stop ${index + 1}`}</Text>
+              </View>
+            </View>
+          </Marker>
         ))}
+
+        {currentLocation && (
+          <Marker coordinate={currentLocation}>
+            <View style={[styles.currentLocationOuter]}>
+              <View
+                style={[
+                  styles.currentLocationInner,
+                  { backgroundColor: company.theme.primary },
+                ]}
+              />
+            </View>
+          </Marker>
+        )}
       </MapView>
 
       {showStartActivity && selectedTaskId && (
@@ -143,6 +252,15 @@ export default function MapPage() {
           title=" Re-center"
           style={styles.recenterButton}
           icon={<Feather name="navigation" style={styles.recenterIcon} />}
+          onPress={() => {
+            if (currentLocation && mapRef.current) {
+              mapRef.current.animateToRegion({
+                ...currentLocation,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              });
+            }
+          }}
         />
       </View>
 
@@ -261,10 +379,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   dot: {
-    width: 12,
-    height: 12,
+    width: 10,
+    height: 10,
     borderRadius: 50,
-    borderWidth: 1,
+    // borderWidth: 1,
     // borderColor: "#003366",
   },
   dotFilled: {
@@ -273,6 +391,49 @@ const styles = StyleSheet.create({
   // dotEmpty: {
   //   backgroundColor: "#003366",
   // },
+  markerContainer: {
+    alignItems: "center",
+  },
+  markerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#003C5F", // default (will be overridden by company.theme.primary)
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  labelBox: {
+    marginTop: 4,
+    backgroundColor: "#",
+    paddingVertical: 24,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  labelText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#1D1B20",
+  },
+  currentLocationOuter: {
+    width: 25,
+    height: 25,
+    borderRadius: 50,
+    backgroundColor: "#003C5F55",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  currentLocationInner: {
+    width: 15,
+    height: 15,
+    borderRadius: 50,
+    backgroundColor: "#003C5F",
+  },
   recenterButton: {
     flexDirection: "row",
     alignItems: "center",

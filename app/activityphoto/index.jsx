@@ -2,12 +2,14 @@ import ScoreSetter from "@/components/ScoreSetter";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
 import { useChallengeStore } from "@/store/challengeStore";
-import { Button } from "@react-navigation/elements";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import React, { useRef, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export default function PhotoPage({ activity, onNext, buttonLabel }) {
+
+export default function PhotoPage({ activity, onNext }) {
   const { addPagePoints, points } = useChallengeStore();
   const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState(null);
@@ -17,23 +19,28 @@ export default function PhotoPage({ activity, onNext, buttonLabel }) {
   const [scoreSelected, setScoreSelected] = useState(false);
   const cameraRef = useRef(null);
   const { company } = useTheme();
-  console.log(activity, "Photo Page+++++");
+  // console.log(activity, "Photo Page+++++");
   const Score = activity.on_app ? points : activity.score;
 
   if (!permission) {
     return null;
   }
 
-  if (!permission.granted) {
-    return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: "center" }}>
-          We need your permission to use the camera
-        </Text>
-        <Button onPress={requestPermission} title="Grant permission" />
-      </View>
-    );
-  }
+ if (!permission.granted) {
+  return (
+    <View style={cameraPermissionStyles.cameraPermissionContainer}>
+      <Ionicons name="camera-outline" size={64} color="#666" style={cameraPermissionStyles.cameraPermissionIcon} />
+      <Text style={cameraPermissionStyles.cameraPermissionTitle}>Camera Access Needed</Text>
+      <Text style={cameraPermissionStyles.cameraPermissionMessage}>
+        To continue, we need access to your device&apos;s camera. Please grant permission.
+      </Text>
+      <TouchableOpacity onPress={requestPermission} style={cameraPermissionStyles.cameraPermissionButton}>
+        <Text style={cameraPermissionStyles.cameraPermissionButtonText}>Grant Permission</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 
   const takePhoto = async () => {
     if (cameraRef.current) {
@@ -48,23 +55,56 @@ export default function PhotoPage({ activity, onNext, buttonLabel }) {
     setSubmitted(false);
     setIsCameraOpen(true);
   };
-
-  const formData = new FormData();
-
-  formData.append("activity", activity.id);
-  formData.append("latitude", activity.location_lat);
-  formData.append("longitude", activity.location_lng);
-  formData.append("file", {
-    uri: photo,
-    name: "photo.jpg",
-    type: "image/jpeg", // or "video/mp4" if it's a video
-  });
-
-  const handleSubmit = () => {
-    // setSubmitted(true);
-    addPagePoints(Score);
-    onNext();
+  const payLoad = {
+    activity: activity.id,
+    latitude: activity.location_lat,
+    longitude: activity.location_lng,
+    file: photo,
   };
+
+  if (activity.on_app) {
+    payLoad.driver_score = points;
+  }
+
+  const handleSubmit = async () => {
+    if (!photo) return;
+
+    const fileUri = photo;
+    const fileName = fileUri.split("/").pop();
+    const fileType = fileName.split(".").pop();
+
+    const formData = new FormData();
+
+    formData.append("activity", activity.id);
+    formData.append("latitude", activity.location_lat);
+    formData.append("longitude", activity.location_lng);
+    formData.append("file", {
+      uri: fileUri,
+      name: fileName,
+      type: `image/${fileType}`,
+    });
+    if (activity.on_app) {
+      formData.append("driver_score", points);
+    }
+const token = await AsyncStorage.getItem("AUTH_TOKEN");
+    try {
+       await fetch('https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'multipart/form-data',
+        Authorization:  `token ${token}`,
+        'X-CSRFTOKEN': 'UWHYzLJQNZC5K3SdzWixpRZNpZtzPxY6CO2OUCcr3wkxdGMW1TcCpmPv5X5hAg3A',
+      },
+      body:  formData,
+    });
+      onNext();
+    } catch (error) {
+      console.error("❌ Upload failed:", error.response?.data || error.message);
+    }
+    addPagePoints(Score);
+  };
+
   const handleCloseModal = () => {
     setIsActivityCompleted(false);
     setScoreSelected(true);
@@ -269,5 +309,44 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     borderWidth: 5,
     borderColor: "#AAA",
+  },
+});
+
+
+const cameraPermissionStyles = StyleSheet.create({
+  cameraPermissionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    backgroundColor: "#f8f8f8",
+  },
+  cameraPermissionIcon: {
+    marginBottom: 20,
+  },
+  cameraPermissionTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  cameraPermissionMessage: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  cameraPermissionButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+  },
+  cameraPermissionButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

@@ -1,5 +1,3 @@
-
-
 import { useChallengeStore } from "@/store/challengeStore";
 import { typeActivity } from "@/types";
 import React, { useState } from "react";
@@ -13,11 +11,10 @@ import PhotoPage from "@/app/activityphoto";
 import TextQuiz from "@/app/activitytext";
 import VideoPage from "@/app/activityvideo";
 
-
 import { router } from "expo-router";
 
 export default function ImagePage() {
-  const { activeTask, completeActivity } = useChallengeStore();
+  const { activeTask,  setCompletedTaskIds } = useChallengeStore();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const activity: typeActivity | undefined = activeTask?.[currentIndex];
@@ -26,8 +23,8 @@ export default function ImagePage() {
     if (activeTask && currentIndex < activeTask.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else if (activeTask) {
-      
       router.push("/feedback");
+      setCompletedTaskIds();
     }
   };
 
@@ -43,17 +40,17 @@ export default function ImagePage() {
     };
 
     switch (activity.task_type) {
-      case "Photo":
+      case "photo":
         return <PhotoPage {...props} />;
-      case "Question(selection)":
+      case "selection":
         return <ActivityOptions {...props} />;
-      case "Video":
+      case "video":
         return <VideoPage {...props} />;
-      case "Question(text)":
+      case "text":
         return <TextQuiz {...props} />;
-      case "Drawing":
-        return <DrawingPage {...props} /> ;
-      case "Activity":
+      case "drawing":
+        return <DrawingPage {...props} />;
+      case "activity":
         return <ActivityPage {...props} />;
       default:
         return (
