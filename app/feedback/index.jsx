@@ -17,7 +17,6 @@ const FEEDBACK_DATA = [
   { minScore: 0, image: zeroStar, message: "Maybe next time!" },
 ];
 
-// CurvedText Component
 const CurvedText = ({ text = "" }) => {
  
   const { company } = useTheme();

@@ -185,14 +185,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
   },
-  // nextButton: {
-  //   position: "absolute",
-  //   bottom: 20,
-  //   right: 20,
-  //   zIndex: 10,
-  // },
-  // buttonText: {
-  //   color: "white",
-  //   fontWeight: "bold",
-  // },
 });

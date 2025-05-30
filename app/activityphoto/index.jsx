@@ -19,7 +19,6 @@ export default function PhotoPage({ activity, onNext }) {
   const [scoreSelected, setScoreSelected] = useState(false);
   const cameraRef = useRef(null);
   const { company } = useTheme();
-  // console.log(activity, "Photo Page+++++");
   const Score = activity.on_app ? points : activity.score;
 
   if (!permission) {
