@@ -1,12 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import ErrorModal from "@/components/ErrorModal"; // Import ErrorModal
+import ErrorModal from "@/components/ErrorModal";
 import ThemedButton from "@/components/ThemedButton";
+import { useChallengeStore } from "@/store/challengeStore";
+import { router } from "expo-router";
 
-const ActivityPrompt = ({ onClose, ID }) => {
+const ActivityPrompt = ({ onClose, ID,onComplete }) => {
   const [showError, setShowError] = useState(false);
-  
+  const { activeChallenge, setActiveTask } = useChallengeStore();
+  useEffect(() => {
+    if (activeChallenge) {
+      const taskId = ID;
+      const task = activeChallenge.tasks?.find((t) => t.id === taskId);
+
+      if (task) {
+        setActiveTask(task.activities);
+      } else {
+        setShowError(true);
+      }
+    }
+  }, [activeChallenge, ID, setActiveTask]);
+
   return (
     <View style={styles.overlay}>
       <View style={styles.modal}>
@@ -30,8 +45,9 @@ const ActivityPrompt = ({ onClose, ID }) => {
         <ThemedButton
           variant="primary"
           style={styles.startButton}
-          onPress={() => setShowError(true)}
+          onPress={() => router.push("/taskmanager")}
           title="Start activity"
+          
         />
       </View>
 
@@ -65,11 +81,11 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: "absolute",
-    top: 12,
-    right: 12,
+    top: 2,
+    right: 2,
   },
   closeText: {
-    fontSize: 24,
+    fontSize: 34,
     color: "darkgray",
   },
   title: {

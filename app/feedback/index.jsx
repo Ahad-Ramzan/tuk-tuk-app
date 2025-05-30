@@ -1,4 +1,3 @@
-import React, { Component } from "react";
 import { Text, View, Image, StyleSheet } from "react-native";
 import ActivityLayout from "@/components/ActivityLayout";
 import ThemedButton from "@/components/ThemedButton";
@@ -8,8 +7,9 @@ import zeroStar from "@/assets/images/zerostar.png";
 import oneStar from "@/assets/images/onestar.png";
 import twoStar from "@/assets/images/twostar.png";
 import threeStar from "@/assets/images/threestar.png";
+import { useChallengeStore } from "@/store/challengeStore";
 
-// Feedback data
+// Feedback options
 const FEEDBACK_DATA = [
   { minScore: 50, image: threeStar, message: "Great job!" },
   { minScore: 25, image: twoStar, message: "Keep it going!" },
@@ -17,28 +17,21 @@ const FEEDBACK_DATA = [
   { minScore: 0, image: zeroStar, message: "Maybe next time!" },
 ];
 
-// Example scores
-const pointsEarned = 50;
-const totalScore = 105;
-
-// --- Curved Text Component ---
 const CurvedText = ({ text = "" }) => {
+ 
   const { company } = useTheme();
-  // console.log(company);
-  const radius = 320; // radius of the arc
+  const radius = 320;
   const centerX = 200;
   const centerY = 150;
-
-  const totalChars = text.length;
-  const angleRange = 120; // degrees across the arc
+  const angleRange = 120;
   const startAngle = 210;
+  const totalChars = text.length;
 
   return (
     <View style={styles.curvedTextContainer}>
       {text.split("").map((char, index) => {
         const angleDeg = startAngle + (index * angleRange) / (totalChars - 1);
         const angleRad = (angleDeg * Math.PI) / 180;
-
         const x = centerX + radius * Math.cos(angleRad);
         const y = centerY + radius * Math.sin(angleRad);
 
@@ -50,8 +43,8 @@ const CurvedText = ({ text = "" }) => {
               {
                 left: x,
                 top: y,
-                transform: [{ rotate: `${angleDeg + 90}deg` }], // Rotating text to match the arc
-                color: company.theme?.primary || "#0A3D62", // Using company theme color or default
+                transform: [{ rotate: `${angleDeg + 90}deg` }],
+                color: company.theme?.primary || "#0A3D62",
               },
             ]}
           >
@@ -63,36 +56,46 @@ const CurvedText = ({ text = "" }) => {
   );
 };
 
-// --- Feedback Screen ---
-export default class FeedbackScreen extends Component {
-  getFeedback = () => {
-    return FEEDBACK_DATA.find((feedback) => pointsEarned >= feedback.minScore);
-  };
+// Main FeedbackScreen
+const FeedbackScreen = () => {
+  const { completeActivity } = useChallengeStore();
+  const { currentActivityPoints, grandTotalPoints } = useChallengeStore();
 
-  render() {
-    const { image, message } = this.getFeedback();
-
-    return (
-      <ActivityLayout>
-        <View style={styles.container}>
-          <CurvedText text={message} />
-          <Image source={image} style={styles.starImage} resizeMode="contain" />
-          <Text style={styles.pointsText}>You won {pointsEarned} points</Text>
-          <Text style={styles.totalText}>
-            Your total score is now {totalScore} points
-          </Text>
-        </View>
-        <ThemedButton
-          title="Continue"
-          style={styles.nextButton}
-          onPress={() => router.push("/thankyou")}
-        />
-      </ActivityLayout>
+  const getFeedback = () => {
+    return FEEDBACK_DATA.find(
+      (feedback) => currentActivityPoints >= feedback.minScore
     );
+  };
+  const handleSubmit = () => {
+    completeActivity()
+    router.push("/mapprogress")
   }
-}
 
-// --- Styles ---
+  const { image, message } = getFeedback();
+
+  return (
+    <ActivityLayout>
+      <View style={styles.container}>
+        <CurvedText text={message} />
+        <Image source={image} style={styles.starImage} resizeMode="contain" />
+        <Text style={styles.pointsText}>You won {currentActivityPoints} points</Text>
+        <Text style={styles.totalText}>
+          Your total score is now {grandTotalPoints+currentActivityPoints} points
+        </Text>
+      </View>
+      <ThemedButton
+        title="Continue"
+        style={styles.nextButton}
+        onPress={handleSubmit}
+      />
+    </ActivityLayout>
+  );
+};
+
+export default FeedbackScreen;
+
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

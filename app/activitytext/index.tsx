@@ -1,15 +1,63 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Image, StyleSheet } from "react-native";
+import { Image, StyleSheet, Text, TextInput, View } from "react-native";
 
+import ScoreSetter from "@/components/ScoreSetter";
 import ThemedButton from "@/components/ThemedButton"; // Imported ThemedButton
-import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
+import { postChallenge } from "@/services/api";
+import { useChallengeStore } from "@/store/challengeStore";
+import { typeActivity } from "@/types";
 
-export default function QuizPage() {
+ type PayLoad = {
+    activity: number;
+    latitude: number;
+    longitude: number;
+    answer: string;
+    driver_score?: number;
+  };
+export default function TextQuiz({
+  activity,
+  onNext,
+}: {
+  activity: typeActivity;
+  onNext: () => void;
+}) {
+  const { addPagePoints, points } = useChallengeStore();
   const [answer, setAnswer] = useState<string>("");
-  const [submitted, setSubmitted] = useState<boolean>(false);
+  const [isActivityCompleted, setIsActivityCompleted] = useState(false);
+
+  const [scoreSelected, setScoreSelected] = useState(false);
   const { company } = useTheme();
-  const router = useRouter();
+
+  const Score = activity.on_app ? points : activity.score;
+  const payLoad:PayLoad = {
+    activity: activity.id,
+    latitude: activity.location_lat,
+    longitude: activity.location_lng,
+    answer: answer,
+  };
+
+  if (activity.on_app) {
+    payLoad.driver_score = points;
+  }
+
+  const handleActivityCompleted = () => {
+    setIsActivityCompleted(true);
+  };
+  const handleCloseModal = () => {
+    setIsActivityCompleted(false);
+    setScoreSelected(true);
+  };
+
+  const handleSubmit = async () => {
+    addPagePoints(Score);
+    try {
+      await postChallenge(payLoad);
+      onNext();
+    } catch (error) {
+      console.error("Error submitting challenge:", error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -18,18 +66,6 @@ export default function QuizPage() {
         source={require("@/assets/images/bgonboarding.png")}
         style={styles.backgroundImage}
       />
-
-      {/* Next button */}
-      <View style={styles.nextButtonContainer}>
-        <ThemedButton
-          onPress={() => {
-            // Add your navigation logic here
-            // navigation.navigate("ActivityDrawing");
-            router.push("/activitydrawing");
-          }}
-          title="Next"
-        />
-      </View>
 
       {/* Logo in the top right corner */}
       <View style={styles.logoContainer}>
@@ -53,9 +89,7 @@ export default function QuizPage() {
           </View>
 
           {/* Subtitle */}
-          <Text style={styles.subtitle}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit
-          </Text>
+          <Text style={styles.subtitle}>{activity.prompt}</Text>
 
           {/* Answer Input */}
           <TextInput
@@ -72,11 +106,23 @@ export default function QuizPage() {
 
           {/* Submit / Assign Score Button */}
           <View style={styles.buttonContainer}>
-            <ThemedButton
-              onPress={() => setSubmitted(true)}
-              title={submitted ? "Assign Score" : "Submit"}
-            />
+            {activity.on_app ? (
+              scoreSelected ? (
+                <ThemedButton title="Submit" onPress={handleSubmit} />
+              ) : (
+                <ThemedButton
+                  title="Assign Score"
+                  onPress={handleActivityCompleted}
+                />
+              )
+            ) : (
+              <ThemedButton title="Submit" onPress={handleSubmit} />
+            )}
           </View>
+          <ScoreSetter
+            isVisible={isActivityCompleted}
+            onClose={handleCloseModal}
+          />
         </View>
       </View>
     </View>

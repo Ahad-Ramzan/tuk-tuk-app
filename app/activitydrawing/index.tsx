@@ -1,13 +1,12 @@
-import React, { useState } from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import DrawingBoard from "@/components/DrawingCanvas";
 import ThemedButton from "@/components/ThemedButton";
-import { useRouter } from "expo-router";
-import DrawingCanvas from "@/components/DrawingCanvas";
 import { useTheme } from "@/context/ThemeContext";
+import { typeActivity } from "@/types";
+import React, { useState } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 
-export default function DrawingFlowPage() {
+export default function DrawingPage({ activity ,onNext}: { activity: typeActivity, onNext: () => void }) {
   const [step, setStep] = useState(1);
-  const router = useRouter();
   const { company } = useTheme();
 
   return (
@@ -31,25 +30,12 @@ export default function DrawingFlowPage() {
               source={require("@/assets/images/activitydrawing.png")}
               style={styles.drawingImage}
             />
-            <Text style={styles.subText}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit
-            </Text>
+            <Text style={styles.subText}>{activity.prompt}</Text>
             <ThemedButton title="Start drawing" onPress={() => setStep(2)} />
           </View>
         )}
 
-        {step === 2 && (
-          <>
-            {/* Next Button */}
-            <View style={styles.nextButtonContainer}>
-              <ThemedButton
-                title="Next"
-                onPress={() => router.push("/activityphoto")}
-              />
-            </View>
-            <DrawingCanvas />
-          </>
-        )}
+        {step === 2 && <DrawingBoard activity={activity} onNext={onNext}/>}
       </View>
     </View>
   );
@@ -58,7 +44,7 @@ export default function DrawingFlowPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EEF0F3", // Light gray background
+    backgroundColor: "#EEF0F3",
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
@@ -76,13 +62,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
-    flex: 1, // This will ensure that it takes up the full height
-    zIndex: 1, // To ensure content is above the background image
+    flex: 1,
+    zIndex: 1,
   },
   logoContainer: {
     position: "absolute",
     top: 40,
-    right: 20, // Adjusted to ensure visibility
+    right: 20,
   },
   logo: {
     width: 140,
@@ -98,7 +84,7 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#414264", // Dark gray
+    color: "#414264",
     marginBottom: 16,
     textAlign: "center",
   },
@@ -109,13 +95,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   subText: {
-    color: "#414264", // Dark gray
+    color: "#414264",
     textAlign: "center",
     marginBottom: 36,
-  },
-  nextButtonContainer: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
   },
 });

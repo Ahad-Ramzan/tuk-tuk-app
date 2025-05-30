@@ -14,10 +14,23 @@ export const getChallenges = async (token: string | null) => {
   }
 };
 
-// POST /challenges/
-export const createChallenge = async (data: any) => {
+//post Acive challenge
+export const postActiveChallenge = async (data: any) => {
   try {
-    const response = await apiClient.post(`/challenges/`, data);
+    const response = await apiClient.post("/ecity/challenge/active/", data);    
+    return response.data;
+  } catch (error: any) {
+    console.error(
+      "Error creating active challenge:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+// POST /challenges/
+export const postChallenge = async (data: any) => {
+  try {
+    const response = await apiClient.post("/ecity/Activity/submissions/", data);
     return response.data;
   } catch (error: any) {
     console.error(

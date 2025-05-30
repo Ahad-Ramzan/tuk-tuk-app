@@ -1,18 +1,33 @@
-import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { QRcode, star, welldone } from "@/assets/images";
 import ThemedButton from "@/components/ThemedButton";
-import { star, welldone, QRcode } from "@/assets/images";
 import { useTheme } from "@/context/ThemeContext";
+import { useChallengeStore } from "@/store/challengeStore";
+import { router } from "expo-router";
+import React from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
+import { postActiveChallenge } from "@/services/api";
 
 export default function PointsScreen() {
+  const { resetAllPoints, grandTotalPoints,activeChallenge } = useChallengeStore();
   const { company } = useTheme();
-  const points = 150;
+  const points = grandTotalPoints;
+  // console.log(activeChallenge, "activeChallenge");
+  const handleExit = () => {
+    const payload = {
+      challenge_id: activeChallenge?.id ,
+      is_active: false,
+    }
+    
+     postActiveChallenge(payload);
+    resetAllPoints();
+    router.push("/");
+  };
 
   return (
     <View style={styles.container}>
       {/* Exit Button */}
       <View style={styles.exitButton}>
-        <ThemedButton title="Exit" onPress={() => {}} />
+        <ThemedButton title="Exit" onPress={handleExit} />
       </View>
 
       {/* Company Logo */}
@@ -71,21 +86,21 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   pointsText: {
-    fontSize: 28,
+    fontSize: 48,
     fontWeight: "700",
     color: "#2B2D42",
     textAlign: "center",
   },
   star: {
-    width: 48,
-    height: 48,
+    width: 200,
+    height: 200,
     resizeMode: "contain",
   },
   leftStar: {
-    transform: [{ rotate: "-90deg" }],
+    transform: [{ rotate: "-100deg" }],
   },
   rightStar: {
-    transform: [{ rotate: "90deg" }],
+    // transform: [{ rotate: "90deg" }],
   },
   wellDoneImage: {
     width: "90%",

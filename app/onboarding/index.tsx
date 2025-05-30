@@ -25,12 +25,11 @@ export default function SlideshowScreen() {
   const imageSize = isLandscape ? height * 0.5 : width * 0.7;
 
   const { id } = useLocalSearchParams();
-  const { challenges } = useChallengeStore();
+  const { challenges, setActiveChallenge } = useChallengeStore();
   const [challengeData, setChallengeData] = useState<typeChallengeData | null>(
     null
   );
   const [slides, setSlides] = useState<typeSlide[]>([]);
-  // console.log("challengeData", challengeData);
 
   useEffect(() => {
     if (id && challenges.length) {
@@ -38,6 +37,7 @@ export default function SlideshowScreen() {
 
       if (foundChallenge) {
         setChallengeData(foundChallenge);
+        setActiveChallenge(foundChallenge);
       }
 
       if (foundChallenge?.prompt) {
@@ -58,7 +58,7 @@ export default function SlideshowScreen() {
         setSlides(generatedSlides);
       }
     }
-  }, [id, challenges]);
+  }, [id, challenges, setActiveChallenge]);
 
   if (!challengeData) {
     return (
@@ -117,7 +117,7 @@ export default function SlideshowScreen() {
 
       {/* Main Content */}
       <View style={styles.content}>
-        <Text style={styles.paragraph}>{slides[currentIndex].paragraph}</Text>
+        <Text style={styles.paragraph}>{slides[currentIndex]?.paragraph}</Text>
 
         <Image
           source={slides[currentIndex].image}

@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from "react-native";
-import { useRouter } from "expo-router";
+
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 import ThemedButton from "@/components/ThemedButton";
@@ -22,8 +22,7 @@ const options = [
 export default function ImagePage() {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const router = useRouter();
-  const { company } = useTheme(); // Accessing the theme from context
+  const { company } = useTheme(); 
 
   return (
     <View style={styles.container}>
@@ -67,21 +66,6 @@ export default function ImagePage() {
           ))}
         </View>
 
-        {/* Submit / Assign Score */}
-        {/* <TouchableOpacity
-          style={[
-            styles.submitButton,
-            { backgroundColor: company.theme.primaryDark },
-          ]} // Dynamically set the color
-          onPress={() =>
-            submitted ? console.log("Assign Score") : setSubmitted(true)
-          }
-        >
-          <Text style={styles.buttonText}>
-            {submitted ? "Assign Score" : "Submit"}
-          </Text>
-        </TouchableOpacity> */}
-
         <ThemedButton
           title={submitted ? "Assign Score" : "Submit"}
           onPress={() =>
@@ -90,12 +74,6 @@ export default function ImagePage() {
         />
       </View>
 
-      {/* Next Button */}
-      <ThemedButton
-        title="Next"
-        onPress={() => router.push("/activitycomplete")}
-        style={styles.nextButton}
-      />
     </View>
   );
 }
@@ -206,15 +184,5 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 24,
     borderRadius: 8,
-  },
-  nextButton: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    zIndex: 10,
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "bold",
   },
 });
