@@ -93,9 +93,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bgImage: {
-    ...StyleSheet.absoluteFillObject,
+    // ...StyleSheet.absoluteFillObject,
+    position: "absolute",
     width: "100%",
-    height: "100%",
+    height: "70%",
+    bottom: 0,
   },
   topRightContainer: {
     flexDirection: "row",
@@ -105,13 +107,13 @@ const styles = StyleSheet.create({
     marginRight: 20,
   },
   logo: {
-    width: 40,
-    height: 40,
+    width: 60,
+    height: 60,
     resizeMode: "contain",
   },
   divider: {
     width: 1,
-    height: 40,
+    height: 60,
     backgroundColor: "#ccc",
     marginHorizontal: 10,
   },

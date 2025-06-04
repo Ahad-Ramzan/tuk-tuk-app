@@ -58,7 +58,7 @@ const CurvedText = ({ text = "" }) => {
 
 // Main FeedbackScreen
 const FeedbackScreen = () => {
-  const { completeActivity } = useChallengeStore();
+  const { completeActivity,completedTask,selectedTask } = useChallengeStore();
   const { currentActivityPoints, grandTotalPoints } = useChallengeStore();
 
   const getFeedback = () => {
@@ -67,6 +67,7 @@ const FeedbackScreen = () => {
     );
   };
   const handleSubmit = () => {
+    completedTask(selectedTask)
     completeActivity()
     router.push("/mapprogress")
   }

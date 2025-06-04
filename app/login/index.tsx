@@ -3,7 +3,6 @@ import React, { useContext, useRef, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -19,14 +18,15 @@ export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuth();
   const { isAuthenticated } = useContext(AuthContext);
-  if (isAuthenticated) {
-    router.push("/");
-  }
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState(["", "", "", ""]);
+  const [error, setError] = useState<string | null>(null);
   const inputRefs = useRef<TextInput[]>([]);
 
+  if (isAuthenticated) {
+    router.push("/");
+  }
 
   const handleChange = (index: number, value: string) => {
     if (/^\d?$/.test(value)) {
@@ -46,20 +46,33 @@ export default function LoginScreen() {
   };
 
   const handleSubmit = async () => {
-    const pin = password.join("") || null;
-    if (!email && !pin) return;
+    const pin = password.join("");
+
+    // Clear old errors
+    setError(null);
+
+    // Validation
+    if (!email.trim()) {
+      return setError("Email is required.");
+    }
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return setError("Please enter a valid email.");
+    }
+    if (pin.length < 4) {
+      return setError("Please enter the 4-digit password.");
+    }
 
     try {
-      await login(email, pin);
-
+      await login(email.trim(), pin);
       router.push("/");
-    } catch (error) {
-      console.error("Login failed:", error);
+    } catch (err) {
+      setError("Login failed. Please check your email or password.");
+      console.error("Login failed:", err);
     }
-  
   };
 
   useAuth();
+
   return (
     <LinearGradient
       colors={["#DBEAFE", "#ffffff", "#DBEAFE"]}
@@ -67,12 +80,9 @@ export default function LoginScreen() {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.innerContainer}
-      >
+      <KeyboardAvoidingView behavior="padding" style={styles.innerContainer}>
         <Image
-          source={require("@/assets/icons/Vector.png")} // Update the path accordingly
+          source={require("@/assets/icons/Vector.png")}
           style={styles.logo}
         />
 
@@ -94,7 +104,9 @@ export default function LoginScreen() {
             {password.map((num, i) => (
               <TextInput
                 key={i}
-                ref={(el) => (inputRefs.current[i] = el!)}
+                ref={(el) => {
+                  inputRefs.current[i] = el!;
+                }}
                 value={num}
                 maxLength={1}
                 keyboardType="number-pad"
@@ -104,6 +116,8 @@ export default function LoginScreen() {
               />
             ))}
           </View>
+
+          {error && <Text style={styles.error}>{error}</Text>}
 
           <TouchableOpacity style={styles.button} onPress={handleSubmit}>
             <Text style={styles.buttonText}>Sign In</Text>
@@ -175,6 +189,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     textAlign: "center",
     fontSize: 20,
+  },
+  error: {
+    color: "#DC2626",
+    textAlign: "center",
+    marginTop: 16,
+    fontSize: 14,
   },
   button: {
     backgroundColor: "#1D4ED8",

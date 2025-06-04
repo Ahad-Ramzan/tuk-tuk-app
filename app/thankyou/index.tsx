@@ -8,7 +8,7 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import { postActiveChallenge } from "@/services/api";
 
 export default function PointsScreen() {
-  const { resetAllPoints, grandTotalPoints,activeChallenge } = useChallengeStore();
+  const { resetAllPoints, grandTotalPoints,activeChallenge,resetCompletedTaskIds } = useChallengeStore();
   const { company } = useTheme();
   const points = grandTotalPoints;
   // console.log(activeChallenge, "activeChallenge");
@@ -20,6 +20,7 @@ export default function PointsScreen() {
     
      postActiveChallenge(payload);
     resetAllPoints();
+    resetCompletedTaskIds();
     router.push("/");
   };
 

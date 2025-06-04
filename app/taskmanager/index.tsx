@@ -14,7 +14,7 @@ import VideoPage from "@/app/activityvideo";
 import { router } from "expo-router";
 
 export default function ImagePage() {
-  const { activeTask,  setCompletedTaskIds } = useChallengeStore();
+  const { activeTask } = useChallengeStore();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const activity: typeActivity | undefined = activeTask?.[currentIndex];
@@ -24,7 +24,6 @@ export default function ImagePage() {
       setCurrentIndex((prev) => prev + 1);
     } else if (activeTask) {
       router.push("/feedback");
-      setCompletedTaskIds();
     }
   };
 
@@ -54,7 +53,7 @@ export default function ImagePage() {
         return <ActivityPage {...props} />;
       default:
         return (
-          <View style={{ padding: 20 }}>
+          <View style={{flex : 1, padding: 20, alignItems: "center", justifyContent: "center" }}>
             <Text>Unknown activity type: {activity.task_type}</Text>
           </View>
         );

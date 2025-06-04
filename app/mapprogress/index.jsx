@@ -9,9 +9,11 @@ import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
+import { postActiveChallenge } from "@/services/api";
 
 export default function MapPage() {
-  const { activeChallenge, completedTaskIds } = useChallengeStore();
+  const { activeChallenge, completedTaskIds, setSelectedTask, resetAllPoints, resetCompletedTaskIds } =
+    useChallengeStore();
   const { company } = useTheme();
   const [progress, setProgress] = useState();
 
@@ -23,11 +25,16 @@ export default function MapPage() {
   const [timer, setTimer] = useState(() =>
     convertToSeconds(activeChallenge?.time_limit || "00:00:00")
   );
+
   const [showStartActivity, setShowStartActivity] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
+ 
 
   const totalDots = 6;
+  useEffect(() => {
+    setSelectedTask(selectedTaskId);
+  }, [selectedTaskId, setSelectedTask]);
   useEffect(() => {
     if (progress === 100) {
       router.push("/thankyou");
@@ -36,7 +43,8 @@ export default function MapPage() {
   useEffect(() => {
     if (activeChallenge?.tasks?.length) {
       const total = activeChallenge.tasks.length;
-      const percent = Math.round((completedTaskIds / total) * 100);
+      const completed = completedTaskIds?.length;
+      const percent = Math.round((completed / total) * 100);
       setProgress(percent);
     }
   }, [completedTaskIds, activeChallenge]);
@@ -82,7 +90,15 @@ export default function MapPage() {
   };
 
   const handleExit = () => {
-    router.push("/camera");
+     const payload = {
+          challenge_id: activeChallenge?.id ,
+          is_active: false,
+        }
+        
+        postActiveChallenge(payload);
+        resetAllPoints();
+        resetCompletedTaskIds();
+    router.push("/");
   };
 
   function getDistance(lat1, lon1, lat2, lon2) {
@@ -158,33 +174,44 @@ export default function MapPage() {
           longitudeDelta: 0.01,
         }}
       >
-        {markers.map((marker, index) => (
-          <Marker
-            key={marker.id}
-            coordinate={{
-              latitude: marker.latitude,
-              longitude: marker.longitude,
-            }}
-            onPress={() => {
-              setSelectedTaskId(marker.id);
-              setShowStartActivity(true);
-            }}
-          >
-            <View style={styles.markerContainer}>
-              <View
-                style={[
-                  styles.markerIcon,
-                  { backgroundColor: company.theme.primary },
-                ]}
-              >
-                <Ionicons name="location-sharp" size={16} color="#fff" />
+        {markers.map((marker, index) => {
+          const isCompleted = completedTaskIds.includes(marker.id);
+
+          return (
+            <Marker
+              key={marker.id}
+              coordinate={{
+                latitude: marker.latitude,
+                longitude: marker.longitude,
+              }}
+              onPress={() => {
+                if (!isCompleted) {
+                  setSelectedTaskId(marker.id);
+                  setShowStartActivity(true);
+                }
+              }}
+            >
+              <View style={styles.markerContainer}>
+                <View
+                  style={[
+                    styles.markerIcon,
+                    {
+                      backgroundColor: isCompleted
+                        ? "#B0B0B0" // Gray for completed
+                        : company.theme.primary,
+                      opacity: isCompleted ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons name="location-sharp" size={16} color="#fff" />
+                </View>
+                <View style={styles.labelBox}>
+                  <Text style={styles.labelText}>{`Stop ${index + 1}`}</Text>
+                </View>
               </View>
-              <View style={styles.labelBox}>
-                <Text style={styles.labelText}>{`Stop ${index + 1}`}</Text>
-              </View>
-            </View>
-          </Marker>
-        ))}
+            </Marker>
+          );
+        })}
 
         {currentLocation && (
           <Marker coordinate={currentLocation}>

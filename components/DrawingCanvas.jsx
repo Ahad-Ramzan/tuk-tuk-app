@@ -1,5 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useChallengeStore } from "@/store/challengeStore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import {
   Canvas,
@@ -24,6 +24,9 @@ import ThemedButton from "./ThemedButton";
 
 const DrawingBoard = ({ activity, onNext }) => {
   const { addPagePoints, points } = useChallengeStore();
+  const [dimensions, setDimensions] = React.useState({
+    window: Dimensions.get("window"),
+  });
   const canvasRef = useCanvasRef();
   const [scoreSelected, setScoreSelected] = useState(false);
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
@@ -76,6 +79,14 @@ const DrawingBoard = ({ activity, onNext }) => {
     setCurrentPoints([]);
   };
 
+  React.useEffect(() => {
+    const subscription = Dimensions.addEventListener("change", ({ window }) => {
+      setDimensions({ window });
+    });
+
+    return () => subscription?.remove();
+  }, []);
+
   const handleSubmit = async () => {
     try {
       if (!canvasRef.current || !activity) {
@@ -102,15 +113,13 @@ const DrawingBoard = ({ activity, onNext }) => {
       const formData = new FormData();
 
       formData.append("activity", activity.id);
-    formData.append("latitude", activity.location_lat);
-    formData.append("longitude", activity.location_lng);
+      formData.append("latitude", activity.location_lat);
+      formData.append("longitude", activity.location_lng);
       formData.append("file", {
-      uri: fileUri,
-      name: fileName,
-      type: `image/${fileType}`,
-    });
-
-
+        uri: fileUri,
+        name: fileName,
+        type: `image/${fileType}`,
+      });
 
       if (activity.on_app) {
         formData.append("driver_score", Score);
@@ -160,7 +169,15 @@ const DrawingBoard = ({ activity, onNext }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Time to darw!</Text>
 
-      <View style={styles.canvasContainer}>
+      <View
+        style={[
+          styles.canvasContainer,
+          {
+            height: dimensions.window.height * 0.65,
+            width: dimensions.window.width * 0.9,
+          },
+        ]}
+      >
         <Canvas
           ref={canvasRef}
           style={styles.canvas}

@@ -30,10 +30,13 @@ export default function VideoPage({ activity, onNext }) {
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const { addPagePoints, points } = useChallengeStore();
   const cameraRef = useRef(null);
   const { company } = useTheme();
   const Score = activity.on_app ? points : activity.score;
+  const videoTime = activity.video_time 
   const player = useVideoPlayer(recordedVideo, (player) => {
     player.loop = true;
     player.muted = false;
@@ -93,7 +96,7 @@ export default function VideoPage({ activity, onNext }) {
         setIsRecording(true);
         const video = await cameraRef.current.recordAsync({
           quality: "720p",
-          maxDuration: 20,
+          maxDuration: 3,
           mute: false,
         });
         setRecordedVideo(video.uri);
@@ -121,6 +124,7 @@ export default function VideoPage({ activity, onNext }) {
 
   const handleSubmit = async () => {
     if (!recordedVideo) return;
+    setIsSubmitting(true); 
     const fileUri = recordedVideo;
     const fileName = fileUri.split("/").pop();
     const fileType = fileName.split(".").pop();
@@ -158,6 +162,8 @@ export default function VideoPage({ activity, onNext }) {
       onNext();
     } catch (error) {
       console.error("❌ Upload failed:", error.response?.data || error.message);
+    }finally {
+      setIsSubmitting(true); 
     }
   };
 
@@ -197,7 +203,7 @@ export default function VideoPage({ activity, onNext }) {
             </TouchableOpacity>
             {activity.on_app ? (
               scoreSelected ? (
-                <ThemedButton title="Submit" onPress={handleSubmit} />
+                <ThemedButton  title={isSubmitting ? "Submitting..." : "Submit"} disabled={isSubmitting} onPress={handleSubmit} />
               ) : (
                 <ThemedButton
                   title="Assign Score"
