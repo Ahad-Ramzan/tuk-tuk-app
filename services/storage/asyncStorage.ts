@@ -27,27 +27,27 @@ export const getStoredToken = async () => {
   }
 };
 //
-const getToken = async () => {
-  try {
-    const token = await AsyncStorage.getItem("user_token");
-    console.log("Retrieved token:", token);
-    return token;
-  } catch (error) {
-    console.error("Error retrieving token:", error);
-    return null;
-  }
-};
+// const getToken = async () => {
+//   try {
+//     const token = await AsyncStorage.getItem("user_token");
+//     console.log("Retrieved token:", token);
+//     return token;
+//   } catch (error) {
+//     console.error("Error retrieving token:", error);
+//     return null;
+//   }
+// };
 // Store User Info
-export const storeUserInfo = async (userInfo) => {
-  try {
-    await AsyncStorage.setItem(
-      STORAGE_KEYS.USER_INFO,
-      JSON.stringify(userInfo)
-    );
-  } catch (error) {
-    console.error("Error storing user info:", error);
-  }
-};
+// export const storeUserInfo = async (userInfo) => {
+//   try {
+//     await AsyncStorage.setItem(
+//       STORAGE_KEYS.USER_INFO,
+//       JSON.stringify(userInfo)
+//     );
+//   } catch (error) {
+//     console.error("Error storing user info:", error);
+//   }
+// };
 
 // Get User Info
 export const getUserInfo = async () => {
@@ -65,7 +65,7 @@ export const clearStorage = async () => {
   try {
     await AsyncStorage.multiRemove([
       STORAGE_KEYS.USER_TOKEN,
-      STORAGE_KEYS.USER_INFO,
+      // STORAGE_KEYS.USER_INFO,
     ]);
   } catch (error) {
     console.error("Error clearing storage:", error);

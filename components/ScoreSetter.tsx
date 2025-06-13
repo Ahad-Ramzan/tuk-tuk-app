@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import Modal from "react-native-modal";
 import { Ionicons } from "@expo/vector-icons";
-import {useChallengeStore} from "@/store/challengeStore";
+import { useChallengeStore } from "@/store/challengeStore";
 
 const SCORE_OPTIONS = [0, 5, 10, 15, 20, 25];
 
@@ -24,16 +24,18 @@ const ScoreSetter = ({
   const { setPoints } = useChallengeStore();
   const handleSelectScore = (selectedScore: number) => {
     setScore(selectedScore);
-    setPoints(selectedScore);
+    // setPoints(selectedScore);
   };
 
   const handleResetScore = () => {
     setScore(null);
     onClose();
-    
   };
 
   const handleConfirm = () => {
+    if (score !== null) {
+      setPoints(score); 
+    }
     onClose();
   };
 

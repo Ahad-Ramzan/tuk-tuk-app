@@ -8,13 +8,13 @@ import { postChallenge } from "@/services/api";
 import { useChallengeStore } from "@/store/challengeStore";
 import { typeActivity } from "@/types";
 
- type PayLoad = {
-    activity: number;
-    latitude: number;
-    longitude: number;
-    answer: string;
-    driver_score?: number;
-  };
+type PayLoad = {
+  activity: number;
+  latitude: number;
+  longitude: number;
+  answer: string;
+  driver_score?: number;
+};
 export default function TextQuiz({
   activity,
   onNext,
@@ -22,7 +22,7 @@ export default function TextQuiz({
   activity: typeActivity;
   onNext: () => void;
 }) {
-  const { addPagePoints, points } = useChallengeStore();
+  const { addPagePoints, points, ThemedLogo } = useChallengeStore();
   const [answer, setAnswer] = useState<string>("");
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
 
@@ -30,7 +30,7 @@ export default function TextQuiz({
   const { company } = useTheme();
 
   const Score = activity.on_app ? points : activity.score;
-  const payLoad:PayLoad = {
+  const payLoad: PayLoad = {
     activity: activity.id,
     latitude: activity.location_lat,
     longitude: activity.location_lng,
@@ -69,10 +69,14 @@ export default function TextQuiz({
 
       {/* Logo in the top right corner */}
       <View style={styles.logoContainer}>
-        <Image
-          source={company.fulllogo} // Check this path!
-          style={styles.logo}
-        />
+        {ThemedLogo ? (
+          <Image
+            source={{ uri: ThemedLogo }} // Check this path!
+            style={styles.logo}
+          />
+        ) : (
+          <Image source={company.fulllogo} style={styles.logo} />
+        )}
       </View>
 
       <View style={styles.contentContainer}>

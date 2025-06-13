@@ -12,8 +12,15 @@ import MapView, { Marker } from "react-native-maps";
 import { postActiveChallenge } from "@/services/api";
 
 export default function MapPage() {
-  const { activeChallenge, completedTaskIds, setSelectedTask, resetAllPoints, resetCompletedTaskIds } =
-    useChallengeStore();
+  const {
+    activeChallenge,
+    completedTaskIds,
+    setSelectedTask,
+    resetAllPoints,
+    resetCompletedTaskIds,
+    ThemedColor,
+    ThemedLogo,
+  } = useChallengeStore();
   const { company } = useTheme();
   const [progress, setProgress] = useState();
 
@@ -29,7 +36,6 @@ export default function MapPage() {
   const [showStartActivity, setShowStartActivity] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
- 
 
   const totalDots = 6;
   useEffect(() => {
@@ -90,14 +96,14 @@ export default function MapPage() {
   };
 
   const handleExit = () => {
-     const payload = {
-          challenge_id: activeChallenge?.id ,
-          is_active: false,
-        }
-        
-        postActiveChallenge(payload);
-        resetAllPoints();
-        resetCompletedTaskIds();
+    const payload = {
+      challenge_id: activeChallenge?.id,
+      is_active: false,
+    };
+
+    postActiveChallenge(payload);
+    resetAllPoints();
+    resetCompletedTaskIds();
     router.push("/");
   };
 
@@ -126,8 +132,8 @@ export default function MapPage() {
       locationSubscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
-          timeInterval: 2000,
-          distanceInterval: 5,
+          timeInterval: 20000,
+          distanceInterval: 30,
         },
         (location) => {
           const userLoc = {
@@ -144,7 +150,7 @@ export default function MapPage() {
               marker.longitude
             );
 
-            if (distance < 30 && !showStartActivity) {
+            if (distance < 50 && !showStartActivity) {
               setSelectedTaskId(marker.id);
               setShowStartActivity(true);
             }
@@ -198,7 +204,7 @@ export default function MapPage() {
                     {
                       backgroundColor: isCompleted
                         ? "#B0B0B0" // Gray for completed
-                        : company.theme.primary,
+                        : ThemedColor || company.theme.primary,
                       opacity: isCompleted ? 0.6 : 1,
                     },
                   ]}
@@ -219,7 +225,7 @@ export default function MapPage() {
               <View
                 style={[
                   styles.currentLocationInner,
-                  { backgroundColor: company.theme.primary },
+                  { backgroundColor: ThemedColor || company.theme.primary },
                 ]}
               />
             </View>
@@ -252,7 +258,7 @@ export default function MapPage() {
                 styles.progressFill,
                 {
                   width: `${progress}%`,
-                  backgroundColor: company.theme.primary,
+                  backgroundColor: ThemedColor || company.theme.primary,
                 },
               ]}
             />
@@ -266,7 +272,10 @@ export default function MapPage() {
                       styles.dot,
                       dotPosition <= progress
                         ? styles.dotFilled
-                        : { backgroundColor: company.theme.primary },
+                        : {
+                            backgroundColor:
+                              ThemedColor || company.theme.primary,
+                          },
                     ]}
                   />
                 );
@@ -319,7 +328,7 @@ export default function MapPage() {
 
       <View style={styles.logoContainer}>
         <Image
-          source={company.fulllogo || TukOnMeLogo}
+          source={{ uri: ThemedLogo } || company.fulllogo || TukOnMeLogo}
           style={styles.logoImage}
         />
       </View>
@@ -531,7 +540,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   logoImage: {
-    width: 140,
+    width: 100,
     height: 60,
     resizeMode: "contain",
   },

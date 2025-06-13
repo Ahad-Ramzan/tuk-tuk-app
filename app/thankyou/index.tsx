@@ -8,17 +8,22 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import { postActiveChallenge } from "@/services/api";
 
 export default function PointsScreen() {
-  const { resetAllPoints, grandTotalPoints,activeChallenge,resetCompletedTaskIds } = useChallengeStore();
+  const {
+    resetAllPoints,
+    grandTotalPoints,
+    activeChallenge,
+    resetCompletedTaskIds,
+  } = useChallengeStore();
   const { company } = useTheme();
   const points = grandTotalPoints;
   // console.log(activeChallenge, "activeChallenge");
   const handleExit = () => {
     const payload = {
-      challenge_id: activeChallenge?.id ,
+      challenge_id: activeChallenge?.id,
       is_active: false,
-    }
-    
-     postActiveChallenge(payload);
+    };
+
+    postActiveChallenge(payload);
     resetAllPoints();
     resetCompletedTaskIds();
     router.push("/");
@@ -116,7 +121,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
-    marginTop: 20,
+    marginTop: -60,
     width: "90%",
     maxWidth: 500,
     shadowColor: "#000",

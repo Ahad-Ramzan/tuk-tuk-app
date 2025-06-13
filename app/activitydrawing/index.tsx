@@ -1,13 +1,21 @@
 import DrawingBoard from "@/components/DrawingCanvas";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
+import { useChallengeStore } from "@/store/challengeStore";
 import { typeActivity } from "@/types";
 import React, { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 
-export default function DrawingPage({ activity ,onNext}: { activity: typeActivity, onNext: () => void }) {
+export default function DrawingPage({
+  activity,
+  onNext,
+}: {
+  activity: typeActivity;
+  onNext: () => void;
+}) {
   const [step, setStep] = useState(1);
   const { company } = useTheme();
+  const { ThemedLogo } = useChallengeStore();
 
   return (
     <View style={styles.container}>
@@ -20,7 +28,11 @@ export default function DrawingPage({ activity ,onNext}: { activity: typeActivit
       <View style={styles.contentContainer}>
         {/* Logo */}
         <View style={styles.logoContainer}>
-          <Image source={company.fulllogo} style={styles.logo} />
+          {ThemedLogo ? (
+            <Image source={{ uri: ThemedLogo }} style={styles.logo1} />
+          ) : (
+            <Image source={company.fulllogo} style={styles.logo} />
+          )}
         </View>
 
         {step === 1 && (
@@ -35,7 +47,7 @@ export default function DrawingPage({ activity ,onNext}: { activity: typeActivit
           </View>
         )}
 
-        {step === 2 && <DrawingBoard activity={activity} onNext={onNext}/>}
+        {step === 2 && <DrawingBoard activity={activity} onNext={onNext} />}
       </View>
     </View>
   );
@@ -73,6 +85,11 @@ const styles = StyleSheet.create({
   logo: {
     width: 140,
     height: 60,
+    resizeMode: "contain",
+  },
+  logo1: {
+    width: 180,
+    height: 80,
     resizeMode: "contain",
   },
   card: {

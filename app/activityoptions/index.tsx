@@ -31,7 +31,7 @@ export default function ActivityOptions({
   activity: typeActivity;
   onNext: () => void;
 }) {
-  const { addPagePoints, points } = useChallengeStore();
+  const { addPagePoints, points,ThemedLogo } = useChallengeStore();
   const [shuffledOptions, setShuffledOptions] = useState<
     { value: string; index: number }[]
   >([]);
@@ -99,11 +99,15 @@ export default function ActivityOptions({
       />
 
       {/* Logo */}
+      {ThemedLogo ? (
+        <Image source={{ uri: ThemedLogo }} style={styles.logo1} />
+      ) : (
       <Image
         source={company.fulllogo}
         style={styles.logo}
         resizeMode="contain"
-      />
+      />  
+      )}
 
       {/* Main content */}
       <View style={styles.content}>
@@ -199,6 +203,15 @@ const styles = StyleSheet.create({
     width: 160,
     height: 60,
     zIndex: 1,
+  },
+  logo1: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    width: 180,
+    height: 80,
+    zIndex: 1,
+    resizeMode: "contain",
   },
   content: {
     width: "90%",

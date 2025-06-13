@@ -22,6 +22,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState(["", "", "", ""]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const inputRefs = useRef<TextInput[]>([]);
 
   if (isAuthenticated) {
@@ -62,12 +63,16 @@ export default function LoginScreen() {
       return setError("Please enter the 4-digit password.");
     }
 
+    setIsLoading(true);
+
     try {
       await login(email.trim(), pin);
       router.push("/");
     } catch (err) {
       setError("Login failed. Please check your email or password.");
       console.error("Login failed:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -97,6 +102,7 @@ export default function LoginScreen() {
             style={styles.input}
             value={email}
             onChangeText={setEmail}
+            editable={!isLoading}
           />
 
           <Text style={[styles.label, { marginTop: 20 }]}>Password</Text>
@@ -113,14 +119,21 @@ export default function LoginScreen() {
                 onChangeText={(text) => handleChange(i, text)}
                 onKeyPress={(e) => handleKeyDown(i, e)}
                 style={styles.pinInput}
+                editable={!isLoading}
               />
             ))}
           </View>
 
           {error && <Text style={styles.error}>{error}</Text>}
 
-          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>Sign In</Text>
+          <TouchableOpacity 
+            style={[styles.button, isLoading && styles.buttonDisabled]} 
+            onPress={handleSubmit}
+            disabled={isLoading}
+          >
+            <Text style={styles.buttonText}>
+              {isLoading ? "Wait..." : "Sign In"}
+            </Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -202,6 +215,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 28,
     alignItems: "center",
+  },
+  buttonDisabled: {
+    backgroundColor: "#9CA3AF",
   },
   buttonText: {
     color: "#fff",

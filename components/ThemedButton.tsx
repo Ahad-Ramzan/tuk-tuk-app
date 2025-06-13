@@ -7,6 +7,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
+import { useChallengeStore } from "@/store/challengeStore";
 
 type ThemedButtonProps = {
   title: string;
@@ -24,13 +25,13 @@ const ThemedButton: React.FC<ThemedButtonProps> = ({
   icon,
 }) => {
   const { company } = useTheme();
-
+const {ThemedColor} =useChallengeStore()
   return (
     <TouchableOpacity
       onPress={onPress}
       style={[
         styles.button,
-        { backgroundColor: company.theme.primaryDark },
+        { backgroundColor: ThemedColor || company.theme.primaryDark },
         disabled && { backgroundColor: "#ccc" },
         style,
       ]}

@@ -1,9 +1,11 @@
 import apiClient from "./apiClient";
 
 // GET /challenges/?page=1
-export const getChallenges = async (token: string | null) => {
+export const getChallenges = async (token: string | null, pageUrl?: string) => {
   try {
-    const response = await apiClient.get(`/ecity/challenges`);
+    const url = pageUrl ? pageUrl : `/ecity/challenges`;
+
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error: any) {
     console.error(
@@ -14,10 +16,28 @@ export const getChallenges = async (token: string | null) => {
   }
 };
 
-//post Acive challenge
+//Get active challenge
+export const getActiveChallenge = async () => {
+  try {
+    const response = await apiClient.get("/ecity/challenge/active/");
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      // Return null or specific object for 404 case
+      return null;
+    }
+    console.error(
+      "Error fetching active challenge:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+//post Active challenge
 export const postActiveChallenge = async (data: any) => {
   try {
-    const response = await apiClient.post("/ecity/challenge/active/", data);    
+    const response = await apiClient.post("/ecity/challenge/active/", data);
     return response.data;
   } catch (error: any) {
     console.error(

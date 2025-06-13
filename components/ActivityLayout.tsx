@@ -1,10 +1,12 @@
 // components/layouts/QuizLayout.tsx
 
 import { useTheme } from "@/context/ThemeContext";
+import { useChallengeStore } from "@/store/challengeStore";
 import React from "react";
 import { View, Image, StyleSheet } from "react-native";
 
 const QuizLayout = ({ children }: { children: React.ReactNode }) => {
+  const { ThemedLogo } = useChallengeStore();
   const { company } = useTheme();
   return (
     <View style={styles.container}>
@@ -16,7 +18,11 @@ const QuizLayout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Logo in the top right corner */}
       <View style={styles.logoContainer}>
-        <Image source={company.fulllogo} style={styles.logo} />
+        {ThemedLogo ? (
+          <Image source={{ uri: ThemedLogo }} style={styles.logo1} />
+        ) : (
+          <Image source={company.fulllogo} style={styles.logo} />
+        )}
       </View>
 
       {/* Screen content */}
@@ -50,6 +56,11 @@ const styles = StyleSheet.create({
   logo: {
     width: 196,
     height: 60,
+    resizeMode: "contain",
+  },
+  logo1: {
+    width: 196,
+    height: 80,
     resizeMode: "contain",
   },
 });

@@ -6,7 +6,7 @@ import ThemedButton from "@/components/ThemedButton";
 import { useChallengeStore } from "@/store/challengeStore";
 import { router } from "expo-router";
 
-const ActivityPrompt = ({ onClose, ID,onComplete }) => {
+const ActivityPrompt = ({ onClose, ID }) => {
   const [showError, setShowError] = useState(false);
   const { activeChallenge, setActiveTask } = useChallengeStore();
   useEffect(() => {
@@ -47,7 +47,6 @@ const ActivityPrompt = ({ onClose, ID,onComplete }) => {
           style={styles.startButton}
           onPress={() => router.push("/taskmanager")}
           title="Start activity"
-          
         />
       </View>
 
@@ -103,7 +102,6 @@ const styles = StyleSheet.create({
     height: 280,
   },
   startButton: {
-    backgroundColor: "#003366", // Adjust based on your theme
     padding: 12,
     borderRadius: 8,
     alignItems: "center",

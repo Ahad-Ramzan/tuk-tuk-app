@@ -8,9 +8,8 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import React, { useRef, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-
 export default function PhotoPage({ activity, onNext }) {
-  const { addPagePoints, points } = useChallengeStore();
+  const { addPagePoints, points, ThemedLogo } = useChallengeStore();
   const [permission, requestPermission] = useCameraPermissions();
   const [photo, setPhoto] = useState(null);
   const [submitted, setSubmitted] = useState(false);
@@ -25,21 +24,33 @@ export default function PhotoPage({ activity, onNext }) {
     return null;
   }
 
- if (!permission.granted) {
-  return (
-    <View style={cameraPermissionStyles.cameraPermissionContainer}>
-      <Ionicons name="camera-outline" size={64} color="#666" style={cameraPermissionStyles.cameraPermissionIcon} />
-      <Text style={cameraPermissionStyles.cameraPermissionTitle}>Camera Access Needed</Text>
-      <Text style={cameraPermissionStyles.cameraPermissionMessage}>
-        To continue, we need access to your device&apos;s camera. Please grant permission.
-      </Text>
-      <TouchableOpacity onPress={requestPermission} style={cameraPermissionStyles.cameraPermissionButton}>
-        <Text style={cameraPermissionStyles.cameraPermissionButtonText}>Grant Permission</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
+  if (!permission.granted) {
+    return (
+      <View style={cameraPermissionStyles.cameraPermissionContainer}>
+        <Ionicons
+          name="camera-outline"
+          size={64}
+          color="#666"
+          style={cameraPermissionStyles.cameraPermissionIcon}
+        />
+        <Text style={cameraPermissionStyles.cameraPermissionTitle}>
+          Camera Access Needed
+        </Text>
+        <Text style={cameraPermissionStyles.cameraPermissionMessage}>
+          To continue, we need access to your device&apos;s camera. Please grant
+          permission.
+        </Text>
+        <TouchableOpacity
+          onPress={requestPermission}
+          style={cameraPermissionStyles.cameraPermissionButton}
+        >
+          <Text style={cameraPermissionStyles.cameraPermissionButtonText}>
+            Grant Permission
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const takePhoto = async () => {
     if (cameraRef.current) {
@@ -67,7 +78,7 @@ export default function PhotoPage({ activity, onNext }) {
 
   const handleSubmit = async () => {
     if (!photo) return;
-
+    setSubmitted(true)
     const fileUri = photo;
     const fileName = fileUri.split("/").pop();
     const fileType = fileName.split(".").pop();
@@ -85,21 +96,26 @@ export default function PhotoPage({ activity, onNext }) {
     if (activity.on_app) {
       formData.append("driver_score", points);
     }
-const token = await AsyncStorage.getItem("AUTH_TOKEN");
+    const token = await AsyncStorage.getItem("AUTH_TOKEN");
     try {
-       await fetch('https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'multipart/form-data',
-        Authorization:  `token ${token}`,
-        'X-CSRFTOKEN': 'UWHYzLJQNZC5K3SdzWixpRZNpZtzPxY6CO2OUCcr3wkxdGMW1TcCpmPv5X5hAg3A',
-      },
-      body:  formData,
-    });
+      await fetch(
+        "https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/",
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "multipart/form-data",
+            Authorization: `token ${token}`,
+            "X-CSRFTOKEN":
+              "UWHYzLJQNZC5K3SdzWixpRZNpZtzPxY6CO2OUCcr3wkxdGMW1TcCpmPv5X5hAg3A",
+          },
+          body: formData,
+        }
+      );
       onNext();
     } catch (error) {
       console.error("❌ Upload failed:", error.response?.data || error.message);
+      setSubmitted(false)
     }
     addPagePoints(Score);
   };
@@ -115,11 +131,15 @@ const token = await AsyncStorage.getItem("AUTH_TOKEN");
   return (
     <View style={styles.container}>
       <View style={styles.logoWrapper}>
-        <Image
-          source={company.fulllogo}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        {ThemedLogo ? (
+          <Image source={{ uri: ThemedLogo }} style={styles.logo1} />
+        ) : (
+          <Image
+            source={company.fulllogo}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        )}
       </View>
 
       <Image
@@ -138,7 +158,7 @@ const token = await AsyncStorage.getItem("AUTH_TOKEN");
             </TouchableOpacity>
             {activity.on_app ? (
               scoreSelected ? (
-                <ThemedButton title="Submit" onPress={handleSubmit} />
+                <ThemedButton title={submitted ? "Submitting..." : "Submit"} onPress={handleSubmit} />
               ) : (
                 <ThemedButton
                   title="Assign Score"
@@ -149,8 +169,9 @@ const token = await AsyncStorage.getItem("AUTH_TOKEN");
               <TouchableOpacity
                 style={styles.primaryBtn}
                 onPress={submitted ? undefined : handleSubmit}
+                disabled={submitted}
               >
-                <Text style={styles.primaryText}>Submit</Text>
+                <Text style={styles.primaryText}>{submitted ? "Submitting..." : "Submit"}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -211,6 +232,11 @@ const styles = StyleSheet.create({
   logo: {
     width: 140,
     height: 60,
+  },
+  logo1: {
+    width: 180,
+    height: 80,
+    resizeMode: "contain",
   },
   backgroundImg: {
     position: "absolute",
@@ -310,7 +336,6 @@ const styles = StyleSheet.create({
     borderColor: "#AAA",
   },
 });
-
 
 const cameraPermissionStyles = StyleSheet.create({
   cameraPermissionContainer: {

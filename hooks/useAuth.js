@@ -1,6 +1,7 @@
 import { useCallback, useContext, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import AuthAPI from "../services/api/authApi";
+import { clearStorage } from "@/services/storage/asyncStorage";
 
 const useAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -15,10 +16,8 @@ const useAuth = () => {
 
       try {
         const userData = await AuthAPI.login(email, password);
-        // console.log(userData, "USERdata ------- hehe");
-        // Update context
         setIsAuthenticated(true);
-        setUserInfo(userData.user);
+        setUserInfo(userData.user);      
 
         return userData;
       } catch (err) {
@@ -42,6 +41,7 @@ const useAuth = () => {
       // Clear context
       setIsAuthenticated(false);
       setUserInfo(null);
+      clearStorage();
 
       return true;
     } catch (err) {

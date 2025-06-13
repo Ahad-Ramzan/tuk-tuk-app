@@ -5,42 +5,105 @@ import { getChallenges, postActiveChallenge } from "@/services/api";
 import { useChallengeStore } from "@/store/challengeStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useContext, useEffect } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useContext, useEffect, useState } from "react";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
 import "../ReactotronConfig";
+import useAuth from "@/hooks/useAuth";
 
 export default function SlideshowScreen() {
   const router = useRouter();
   const { company } = useTheme();
-  const { challenges, setChallenges } = useChallengeStore();
+  const { challenges, setChallenges, setBrandDetails } = useChallengeStore();
+  const [refreshing, setRefreshing] = useState(false);
   const { isAuthenticated } = useContext(AuthContext);
+  const { logout } = useAuth();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
+  const [prevPageUrl, setPrevPageUrl] = useState<string | null>(null);
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace("/login");
     }
   }, [isAuthenticated, router]);
 
+  const fetchChallenges = async (pageUrl?: string) => {
+    try {
+      const token = await AsyncStorage.getItem("user_token");
+      const data = await getChallenges(token || "", pageUrl);
+
+      setChallenges(data?.results || []);
+      setTotalCount(data?.count || 0);
+      setNextPageUrl(data?.next || null);
+      setPrevPageUrl(data?.previous || null);
+    } catch (error) {
+      console.error("Failed to fetch challenges:", error);
+    }
+  };
+
   useEffect(() => {
-    const fetchChallenges = async () => {
-      try {
-        const token = await AsyncStorage.getItem("user_token");
-        const data = await getChallenges(token || "");
-        setChallenges(data?.results || []);
-      } catch (error) {
-        console.error("Failed to fetch challenges:", error);
-      }
-    };
     if (isAuthenticated) {
       fetchChallenges();
     }
   }, [setChallenges, isAuthenticated, router]);
 
-  const handleStartActivity = (challengeId: number) => {
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchChallenges();
+    setRefreshing(false);
+  };
+
+  const handleNext = () => {
+    if (nextPageUrl) {
+      fetchChallenges(nextPageUrl);
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (prevPageUrl) {
+      fetchChallenges(prevPageUrl);
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+
+      router.replace("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  const handleStartActivity = async (challengeId: number) => {
+    if (challengeId && challenges.length) {
+      const foundChallenge = challenges.find(
+        (ch) => ch.id === Number(challengeId)
+      );
+      if (foundChallenge?.brand) {
+        const { image, color_scheme } = foundChallenge?.brand;
+        setBrandDetails(image, color_scheme);
+        // console.log("brand details saved to store:" ,{image,color_scheme})
+      }
+    }
     const payload = {
       challenge_id: challengeId,
       is_active: true,
     };
-    postActiveChallenge(payload);
+    await postActiveChallenge(payload);
 
     router.push({
       pathname: "/onboarding",
@@ -58,16 +121,23 @@ export default function SlideshowScreen() {
 
       {/* Top Right Logos */}
       <View style={styles.topRightContainer}>
-        <Image
-          source={require("@/assets/icons/Vector.png")}
-          style={styles.logo}
-        />
+        <TouchableOpacity onPress={handleLogout}>
+          <Image
+            source={require("@/assets/icons/Vector.png")}
+            style={styles.logo}
+          />
+        </TouchableOpacity>
         <View style={styles.divider} />
         <Image source={company.logo} style={styles.logo} />
       </View>
 
       {/* Challenge List */}
-      <ScrollView contentContainerStyle={styles.challengeList}>
+      <ScrollView
+        contentContainerStyle={styles.challengeList}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
         {challenges.map((challenge) => (
           <View key={challenge.id} style={styles.challengeItem}>
             <View style={styles.challengeInfo}>
@@ -84,6 +154,35 @@ export default function SlideshowScreen() {
           </View>
         ))}
       </ScrollView>
+
+      {/* Pagination Controls */}
+      {totalCount > 10 && (
+        <View style={styles.paginationContainer}>
+          <TouchableOpacity
+            onPress={handlePrev}
+            disabled={!prevPageUrl}
+            style={[
+              styles.paginationButton,
+              !prevPageUrl && styles.disabledButton,
+            ]}
+          >
+            <Text style={styles.paginationText}>Previous</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.pageText}>Page {currentPage}</Text>
+
+          <TouchableOpacity
+            onPress={handleNext}
+            disabled={!nextPageUrl}
+            style={[
+              styles.paginationButton,
+              !nextPageUrl && styles.disabledButton,
+            ]}
+          >
+            <Text style={styles.paginationText}>Next</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -93,7 +192,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bgImage: {
-    // ...StyleSheet.absoluteFillObject,
     position: "absolute",
     width: "100%",
     height: "70%",
@@ -137,10 +235,10 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   activityButton: {
+    backgroundColor: "#003366",
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
-
   challengeName: {
     fontSize: 18,
     fontWeight: "600",
@@ -150,5 +248,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#555",
     marginBottom: 12,
+  },
+  paginationContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#ddd",
+  },
+  paginationButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 4,
+    marginHorizontal: 8,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  paginationText: {
+    fontSize: 14,
+    color: "#333",
+  },
+  pageText: {
+    fontSize: 14,
+    color: "#666",
+    marginHorizontal: 8,
   },
 });

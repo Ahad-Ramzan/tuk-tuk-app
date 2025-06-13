@@ -6,22 +6,34 @@ import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
 import { typeActivity } from "@/types";
 import { useChallengeStore } from "@/store/challengeStore";
-export default function ActivityPage({ activity,onNext }: { activity: typeActivity, onNext: () => void }) {
-  const {  addPagePoints, points } = useChallengeStore();
+export default function ActivityPage({
+  activity,
+  onNext,
+}: {
+  activity: typeActivity;
+  onNext: () => void;
+}) {
+  const { addPagePoints, points, ThemedLogo } = useChallengeStore();
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [scoreSelected, setScoreSelected] = useState(false);
   const { company } = useTheme();
-const Score = activity.on_app ? points : activity.score;
+  const Score = activity.on_app ? points : activity.score;
 
- const payLoad = {
-  activity: activity.id,
-  latitude: activity.location_lat,
-  longitude: activity.location_lng,
-};
+  type TpayLoad = {
+    activity: number;
+    latitude: number;
+    longitude: number;
+    driver_score?: number;
+  };
+  const payLoad: TpayLoad = {
+    activity: activity.id,
+    latitude: activity.location_lat,
+    longitude: activity.location_lng,
+  };
 
-if (activity.on_app) {
-  payLoad.driver_score = points;
-}
+  if (activity.on_app) {
+    payLoad.driver_score = points;
+  }
   const handleActivityCompleted = () => {
     setIsActivityCompleted(true);
   };
@@ -42,11 +54,15 @@ if (activity.on_app) {
         style={styles.backgroundImage}
       />
       {/* Logo Top Right */}
-      <Image
-        source={company.fulllogo}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      {ThemedLogo ? (
+        <Image source={{ uri: ThemedLogo }} style={styles.logo1} />
+      ) : (
+        <Image
+          source={company.fulllogo}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      )}
 
       {/* Content */}
       <View style={styles.content}>
@@ -63,7 +79,7 @@ if (activity.on_app) {
           onPress={handleActivityCompleted}
          
         /> */}
-         {activity.on_app ? (
+        {activity.on_app ? (
           scoreSelected ? (
             <ThemedButton title="Submit" onPress={handleSubmit} />
           ) : (
@@ -102,6 +118,14 @@ const styles = StyleSheet.create({
     top: 40,
     right: 20,
     zIndex: 10,
+  },
+  logo1: {
+    width: 180,
+    height: 80,
+    resizeMode: "contain",
+    position: "absolute",
+    top: 40,
+    right: 20,
   },
   content: {
     flex: 1,

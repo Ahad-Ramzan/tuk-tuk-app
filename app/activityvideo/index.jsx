@@ -21,7 +21,7 @@ import {
 } from "react-native";
 
 export default function VideoPage({ activity, onNext }) {
-  const [facing, setFacing] = useState(CameraType?.back);
+  const [facing] = useState(CameraType?.back);
   const [permission, requestPermission] = useCameraPermissions();
   const [microphonePermission, requestMicrophonePermission] =
     useMicrophonePermissions();
@@ -32,11 +32,11 @@ export default function VideoPage({ activity, onNext }) {
   const [isRecording, setIsRecording] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { addPagePoints, points } = useChallengeStore();
+  const { addPagePoints, points, ThemedLogo } = useChallengeStore();
   const cameraRef = useRef(null);
   const { company } = useTheme();
   const Score = activity.on_app ? points : activity.score;
-  const videoTime = activity.video_time 
+  const videoTime = activity.video_time;
   const player = useVideoPlayer(recordedVideo, (player) => {
     player.loop = true;
     player.muted = false;
@@ -96,7 +96,7 @@ export default function VideoPage({ activity, onNext }) {
         setIsRecording(true);
         const video = await cameraRef.current.recordAsync({
           quality: "720p",
-          maxDuration: 3,
+          maxDuration: videoTime || 20,
           mute: false,
         });
         setRecordedVideo(video.uri);
@@ -124,7 +124,7 @@ export default function VideoPage({ activity, onNext }) {
 
   const handleSubmit = async () => {
     if (!recordedVideo) return;
-    setIsSubmitting(true); 
+    setIsSubmitting(true);
     const fileUri = recordedVideo;
     const fileName = fileUri.split("/").pop();
     const fileType = fileName.split(".").pop();
@@ -162,19 +162,23 @@ export default function VideoPage({ activity, onNext }) {
       onNext();
     } catch (error) {
       console.error("❌ Upload failed:", error.response?.data || error.message);
-    }finally {
-      setIsSubmitting(true); 
+    } finally {
+      setIsSubmitting(true);
     }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.logoWrapper}>
-        <Image
-          source={company.fulllogo}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+        {ThemedLogo ? (
+          <Image source={{ uri: ThemedLogo }} style={styles.logo1} />
+        ) : (
+          <Image
+            source={company.fulllogo}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        )}
       </View>
 
       <Image
@@ -203,7 +207,11 @@ export default function VideoPage({ activity, onNext }) {
             </TouchableOpacity>
             {activity.on_app ? (
               scoreSelected ? (
-                <ThemedButton  title={isSubmitting ? "Submitting..." : "Submit"} disabled={isSubmitting} onPress={handleSubmit} />
+                <ThemedButton
+                  title={isSubmitting ? "Submitting..." : "Submit"}
+                  disabled={isSubmitting}
+                  onPress={handleSubmit}
+                />
               ) : (
                 <ThemedButton
                   title="Assign Score"
@@ -222,6 +230,7 @@ export default function VideoPage({ activity, onNext }) {
           <ScoreSetter
             isVisible={isActivityCompleted}
             onClose={handleCloseModal}
+            
           />
         </View>
       ) : isCameraOpen ? (
@@ -231,40 +240,31 @@ export default function VideoPage({ activity, onNext }) {
             facing={facing}
             ref={cameraRef}
             mode="video"
-          >
-            {/* <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.flipButton}
-                onPress={toggleCameraFacing}
-              >
-                <Text style={styles.flipText}>Flip Camera</Text>
-              </TouchableOpacity>
-            </View> */}
+          />
 
-            <View style={styles.recordingControls}>
-              {isRecording && (
-                <View style={styles.recordingIndicator}>
-                  <View style={styles.redDot} />
-                  <Text style={styles.recordingText}>Recording...</Text>
-                </View>
-              )}
+          <View style={styles.recordingControls}>
+            {isRecording && (
+              <View style={styles.recordingIndicator}>
+                <View style={styles.redDot} />
+                <Text style={styles.recordingText}>Recording...</Text>
+              </View>
+            )}
 
-              <TouchableOpacity
+            <TouchableOpacity
+              style={[
+                styles.recordButton,
+                isRecording && styles.recordButtonActive,
+              ]}
+              onPress={isRecording ? stopRecording : startRecording}
+            >
+              <View
                 style={[
-                  styles.recordButton,
-                  isRecording && styles.recordButtonActive,
+                  styles.recordButtonInner,
+                  isRecording && styles.recordButtonInnerActive,
                 ]}
-                onPress={isRecording ? stopRecording : startRecording}
-              >
-                <View
-                  style={[
-                    styles.recordButtonInner,
-                    isRecording && styles.recordButtonInnerActive,
-                  ]}
-                />
-              </TouchableOpacity>
-            </View>
-          </CameraView>
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <View style={styles.inner}>
@@ -384,6 +384,11 @@ const styles = StyleSheet.create({
   logo: {
     width: 140,
     height: 60,
+  },
+  logo1: {
+    width: 180,
+    height: 80,
+    resizeMode: "contain",
   },
   backgroundImg: {
     position: "absolute",
