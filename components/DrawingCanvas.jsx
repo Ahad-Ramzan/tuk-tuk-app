@@ -21,8 +21,9 @@ import {
 } from "react-native";
 import ScoreSetter from "./ScoreSetter";
 import ThemedButton from "./ThemedButton";
+import { isConnected } from "@/utility/Netinfo";
 
-const DrawingBoard = ({ activity, onNext }) => {
+export default function DrawingBoard({ activity, onNext }) {
   const { addPagePoints, points } = useChallengeStore();
   const [dimensions, setDimensions] = React.useState({
     window: Dimensions.get("window"),
@@ -38,6 +39,12 @@ const DrawingBoard = ({ activity, onNext }) => {
   const color = mode === "pen" ? "black" : "white";
   const strokeWidth = mode === "pen" ? 4 : 10;
   const Score = activity.on_app ? points : activity.score;
+
+  const generateOfflineKey = () => {
+    const timestamp = Date.now().toString(36); // base36 to shorten
+    const random = Math.random().toString(36).substring(2, 10); // 8-char random string
+    return `${timestamp}-${random}`;
+  };
 
   const handleTouchStart = (evt) => {
     const { locationX, locationY } = evt.nativeEvent;
@@ -87,31 +94,46 @@ const DrawingBoard = ({ activity, onNext }) => {
     return () => subscription?.remove();
   }, []);
 
-  const handleSubmit = async () => {
-    try {
-      if (!canvasRef.current || !activity) {
-        Alert.alert("Error", "Missing canvas or activity data.");
-        return;
-      }
 
-      const image = canvasRef.current.makeImageSnapshot();
-      if (!image) {
-        Alert.alert("Error", "Failed to capture image snapshot.");
-        return;
-      }
+const handleSubmit = async () => {
+  try {
+    if (!canvasRef.current || !activity) {
+      Alert.alert("Error", "Missing canvas or activity data.");
+      return;
+    }
 
-      const base64 = image.encodeToBase64(ImageFormat.PNG);
-      const fileUrl = FileSystem.documentDirectory + "drawing.png";
+    const image = canvasRef.current.makeImageSnapshot();
+    if (!image) {
+      Alert.alert("Error", "Failed to capture image snapshot.");
+      return;
+    }
 
-      await FileSystem.writeAsStringAsync(fileUrl, base64, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      const fileUri = fileUrl;
-      const fileName = fileUri.split("/").pop();
-      const fileType = fileName.split(".").pop();
+    const base64 = image.encodeToBase64(ImageFormat.PNG);
+    const fileUrl = FileSystem.documentDirectory + "drawing.png";
 
+    await FileSystem.writeAsStringAsync(fileUrl, base64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    const fileUri = fileUrl;
+    const fileName = fileUri.split("/").pop();
+    const fileType = fileName.split(".").pop();
+
+    const formPayload = {
+      activity: activity.id,
+      latitude: activity.location_lat,
+      longitude: activity.location_lng,
+      fileUri,
+      fileName,
+      fileType,
+      driver_score: activity.on_app ? Score : null,
+    };
+
+    const token = await AsyncStorage.getItem("AUTH_TOKEN");
+    const net = await isConnected();
+
+    if (net ) {
       const formData = new FormData();
-
       formData.append("activity", activity.id);
       formData.append("latitude", activity.location_lat);
       formData.append("longitude", activity.location_lng);
@@ -120,11 +142,9 @@ const DrawingBoard = ({ activity, onNext }) => {
         name: fileName,
         type: `image/${fileType}`,
       });
-
       if (activity.on_app) {
         formData.append("driver_score", Score);
       }
-      const token = await AsyncStorage.getItem("AUTH_TOKEN");
 
       await fetch(
         "https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/",
@@ -134,8 +154,6 @@ const DrawingBoard = ({ activity, onNext }) => {
             Accept: "application/json",
             "Content-Type": "multipart/form-data",
             Authorization: `token ${token}`,
-            "X-CSRFTOKEN":
-              "UWHYzLJQNZC5K3SdzWixpRZNpZtzPxY6CO2OUCcr3wkxdGMW1TcCpmPv5X5hAg3A",
           },
           body: formData,
         }
@@ -143,14 +161,23 @@ const DrawingBoard = ({ activity, onNext }) => {
 
       addPagePoints(Score);
       onNext();
-    } catch (error) {
-      console.error("Submission failed:", error);
-      Alert.alert(
-        "Error",
-        "Something went wrong while submitting. Please try again."
-      );
+    } else {
+      // Save offline if no internet
+      const id = await generateOfflineKey();
+      const offlineQueue = JSON.parse(await AsyncStorage.getItem("offline_submissions1")) || {};
+      offlineQueue[id] = formPayload;
+      await AsyncStorage.setItem("offline_submissions1", JSON.stringify(offlineQueue));
+      console.log("Offline Queue: DrawingCanvas page", offlineQueue);
+      Alert.alert("Saved Offline", "Submission will be uploaded when internet is available.");
+      addPagePoints(Score);
+      onNext();
     }
-  };
+  } catch (error) {
+    console.error("Submission failed:", error);
+    Alert.alert("Error", "Something went wrong while submitting.");
+  }
+};
+
 
   const currentPath = Skia.Path.Make();
   if (
@@ -261,9 +288,7 @@ const DrawingBoard = ({ activity, onNext }) => {
       </View>
     </View>
   );
-};
-
-export default DrawingBoard;
+}
 
 const styles = StyleSheet.create({
   container: {

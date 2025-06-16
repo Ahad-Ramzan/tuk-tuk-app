@@ -5,7 +5,10 @@ import { getChallenges, postActiveChallenge } from "@/services/api";
 import { useChallengeStore } from "@/store/challengeStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { isConnected } from "@/utility/Netinfo";
 import React, { useContext, useEffect, useState } from "react";
+import { syncOfflineSubmissions } from "@/utility/syncOffline";
+
 import {
   Image,
   ScrollView,
@@ -38,17 +41,47 @@ export default function SlideshowScreen() {
     }
   }, [isAuthenticated, router]);
 
-  const fetchChallenges = async (pageUrl?: string) => {
-    try {
-      const token = await AsyncStorage.getItem("user_token");
-      const data = await getChallenges(token || "", pageUrl);
+  useEffect(() => {
+    const checkConnectionAndSync = async () => {
+      const Net = await isConnected();
+      if (Net) {
+        syncOfflineSubmissions();
+      }
+    };
+    checkConnectionAndSync();
+  }, [router]);
 
-      setChallenges(data?.results || []);
-      setTotalCount(data?.count || 0);
-      setNextPageUrl(data?.next || null);
-      setPrevPageUrl(data?.previous || null);
-    } catch (error) {
-      console.error("Failed to fetch challenges:", error);
+  const fetchChallenges = async (pageUrl?: string) => {
+    const token = await AsyncStorage.getItem("user_token");
+    const online = await isConnected();
+    console.log(online, "connection status index.jsx");
+
+    if (online) {
+      try {
+        const data = await getChallenges(token || "", pageUrl);
+        setChallenges(data?.results || []);
+        setTotalCount(data?.count || 0);
+        setNextPageUrl(data?.next || null);
+        setPrevPageUrl(data?.previous || null);
+
+        // Save to AsyncStorage
+        await AsyncStorage.setItem("cached_challenges", JSON.stringify(data));
+      } catch (error) {
+        console.error("Failed to fetch online challenges:", error);
+      }
+    } else {
+      try {
+        const cached = await AsyncStorage.getItem("cached_challenges");
+        if (cached) {
+          const data = JSON.parse(cached);
+          setChallenges(data?.results || []);
+          setTotalCount(data?.count || 0);
+          setNextPageUrl(null); // Pagination offline is not supported
+          setPrevPageUrl(null);
+        }
+      } catch (err) {
+        console.log("No cached data available", err);
+      }
     }
   };
 
@@ -99,11 +132,11 @@ export default function SlideshowScreen() {
         // console.log("brand details saved to store:" ,{image,color_scheme})
       }
     }
-    const payload = {
-      challenge_id: challengeId,
-      is_active: true,
-    };
-    await postActiveChallenge(payload);
+    // const payload = {
+    //   challenge_id: challengeId,
+    //   is_active: true,
+    // };
+    // await postActiveChallenge(payload);
 
     router.push({
       pathname: "/onboarding",

@@ -13,7 +13,7 @@ export default function DrawingPage({
   activity: typeActivity;
   onNext: () => void;
 }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(true);
   const { company } = useTheme();
   const { ThemedLogo } = useChallengeStore();
 
@@ -35,7 +35,7 @@ export default function DrawingPage({
           )}
         </View>
 
-        {step === 1 && (
+        {step && (
           <View style={styles.card}>
             <Text style={styles.heading}>Time to draw! </Text>
             <Image
@@ -43,11 +43,11 @@ export default function DrawingPage({
               style={styles.drawingImage}
             />
             <Text style={styles.subText}>{activity.prompt}</Text>
-            <ThemedButton title="Start drawing" onPress={() => setStep(2)} />
+            <ThemedButton title="Start drawing" onPress={() => setStep(false)} />
           </View>
         )}
 
-        {step === 2 && <DrawingBoard activity={activity} onNext={onNext} />}
+        {!step  && <DrawingBoard activity={activity} onNext={onNext} />}
       </View>
     </View>
   );
