@@ -56,6 +56,7 @@ export default function SlideshowScreen() {
     const online = await isConnected();
     console.log(online, "connection status index.jsx");
 
+
     if (online) {
       try {
         const data = await getChallenges(token || "", pageUrl);
@@ -114,6 +115,8 @@ export default function SlideshowScreen() {
   const handleLogout = async () => {
     try {
       await logout();
+      await AsyncStorage.removeItem("USER_EMAIL");
+      await AsyncStorage.removeItem("USER_PIN");
 
       router.replace("/login");
     } catch (error) {

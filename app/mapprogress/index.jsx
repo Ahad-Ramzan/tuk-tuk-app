@@ -9,7 +9,8 @@ import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
-import { postActiveChallenge } from "@/services/api";
+
+import PasswordModal from "../../components/PasswordModel";
 
 export default function MapPage() {
   const {
@@ -23,6 +24,7 @@ export default function MapPage() {
   } = useChallengeStore();
   const { company } = useTheme();
   const [progress, setProgress] = useState();
+  const randomOrder = activeChallenge?.random_order;
 
   const mapRef = useRef(null);
   const convertToSeconds = (timeString) => {
@@ -36,16 +38,23 @@ export default function MapPage() {
   const [showStartActivity, setShowStartActivity] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+  const handlePasswordSuccess = () => {
+    setShowStartActivity(true);
+  };
 
   const totalDots = 6;
   useEffect(() => {
     setSelectedTask(selectedTaskId);
   }, [selectedTaskId, setSelectedTask]);
+
   useEffect(() => {
     if (progress === 100) {
       router.push("/thankyou");
     }
   }, [progress, router]);
+
   useEffect(() => {
     if (activeChallenge?.tasks?.length) {
       const total = activeChallenge.tasks.length;
@@ -55,10 +64,59 @@ export default function MapPage() {
     }
   }, [completedTaskIds, activeChallenge]);
 
+  // Function to check if a task is available based on randomOrder
+  const isTaskAvailable = (taskId, taskIndex) => {
+    if (randomOrder === true) {
+      // Random order: any incomplete task can be selected
+      return !completedTaskIds.includes(taskId);
+    } else {
+      // Sequential order: only the next task in sequence can be selected
+      if (completedTaskIds.includes(taskId)) {
+        return false; // Already completed
+      }
+
+      // Check if all previous tasks are completed
+      const tasksBeforeThis = activeChallenge.tasks.slice(0, taskIndex);
+      const allPreviousCompleted = tasksBeforeThis.every((task) =>
+        completedTaskIds.includes(task.id)
+      );
+
+      return allPreviousCompleted;
+    }
+  };
+
+  // Function to get the next available task for sequential order
+  const getNextAvailableTask = () => {
+    if (randomOrder === true) {
+      // Random order: return any incomplete task
+      const incompleteTasks = activeChallenge.tasks.filter(
+        (task) => !completedTaskIds.includes(task.id)
+      );
+      return incompleteTasks.length > 0 ? incompleteTasks[0] : null;
+    } else {
+      // Sequential order: return the first incomplete task in sequence
+      for (let i = 0; i < activeChallenge.tasks.length; i++) {
+        const task = activeChallenge.tasks[i];
+        if (!completedTaskIds.includes(task.id)) {
+          // Check if all previous tasks are completed
+          const tasksBeforeThis = activeChallenge.tasks.slice(0, i);
+          const allPreviousCompleted = tasksBeforeThis.every((prevTask) =>
+            completedTaskIds.includes(prevTask.id)
+          );
+
+          if (allPreviousCompleted) {
+            return task;
+          }
+        }
+      }
+      return null;
+    }
+  };
+
   const extractTaskLocations = (activeChallenge) => {
     if (!activeChallenge?.tasks) return [];
     return activeChallenge.tasks
-      .map((task) => {
+      .map((task, index) => {
         const firstActivity = task.activities?.[0];
         if (
           firstActivity?.location_lat != null &&
@@ -68,6 +126,8 @@ export default function MapPage() {
             id: task.id,
             latitude: firstActivity.location_lat,
             longitude: firstActivity.location_lng,
+            title: task.task_name,
+            index: index, // Add index for sequential checking
           };
         }
         return null;
@@ -96,12 +156,6 @@ export default function MapPage() {
   };
 
   const handleExit = () => {
-    const payload = {
-      challenge_id: activeChallenge?.id,
-      is_active: false,
-    };
-
-    postActiveChallenge(payload);
     resetAllPoints();
     resetCompletedTaskIds();
     router.push("/");
@@ -142,6 +196,8 @@ export default function MapPage() {
           };
 
           setCurrentLocation(userLoc);
+
+          // Check proximity to markers based on order rules
           markers.forEach((marker) => {
             const distance = getDistance(
               userLoc.latitude,
@@ -150,7 +206,12 @@ export default function MapPage() {
               marker.longitude
             );
 
-            if (distance < 50 && !showStartActivity) {
+            // Only trigger if within range, not already showing activity, and task is available
+            if (
+              distance < 50 &&
+              !showStartActivity &&
+              isTaskAvailable(marker.id, marker.index)
+            ) {
               setSelectedTaskId(marker.id);
               setShowStartActivity(true);
             }
@@ -166,7 +227,7 @@ export default function MapPage() {
         locationSubscription.remove();
       }
     };
-  }, [markers, showStartActivity]);
+  }, [markers, showStartActivity, completedTaskIds, randomOrder]);
 
   return (
     <View style={styles.container}>
@@ -182,6 +243,27 @@ export default function MapPage() {
       >
         {markers.map((marker, index) => {
           const isCompleted = completedTaskIds.includes(marker.id);
+          const isAvailable = isTaskAvailable(marker.id, marker.index);
+
+          // Determine marker appearance
+          let markerStyle = {};
+          let markerOpacity = 1;
+
+          if (isCompleted) {
+            // Completed tasks - gray and semi-transparent
+            markerStyle = { backgroundColor: "#B0B0B0" };
+            markerOpacity = 0.6;
+          } else if (!isAvailable) {
+            // Locked tasks (for sequential order) - darker and semi-transparent
+            markerStyle = { backgroundColor: "#666666" };
+            markerOpacity = 0.4;
+          } else {
+            // Available tasks - normal themed color
+            markerStyle = {
+              backgroundColor: ThemedColor || company.theme.primary,
+            };
+            markerOpacity = 1;
+          }
 
           return (
             <Marker
@@ -191,9 +273,14 @@ export default function MapPage() {
                 longitude: marker.longitude,
               }}
               onPress={() => {
-                if (!isCompleted) {
+                if (isAvailable && !isCompleted) {
                   setSelectedTaskId(marker.id);
-                  setShowStartActivity(true);
+                  setShowPasswordModal(true);
+                } else if (!isAvailable && !isCompleted) {
+                  // Show message for locked tasks in sequential mode
+                  if (randomOrder === false) {
+                    alert("Complete previous tasks first!");
+                  }
                 }
               }}
             >
@@ -201,18 +288,24 @@ export default function MapPage() {
                 <View
                   style={[
                     styles.markerIcon,
-                    {
-                      backgroundColor: isCompleted
-                        ? "#B0B0B0" // Gray for completed
-                        : ThemedColor || company.theme.primary,
-                      opacity: isCompleted ? 0.6 : 1,
-                    },
+                    markerStyle,
+                    { opacity: markerOpacity },
                   ]}
                 >
-                  <Ionicons name="location-sharp" size={16} color="#fff" />
+                  {isCompleted ? (
+                    <Ionicons name="checkmark" size={16} color="#fff" />
+                  ) : !isAvailable ? (
+                    <Ionicons name="lock-closed" size={16} color="#fff" />
+                  ) : (
+                    <Ionicons name="location-sharp" size={16} color="#fff" />
+                  )}
                 </View>
-                <View style={styles.labelBox}>
-                  <Text style={styles.labelText}>{`Stop ${index + 1}`}</Text>
+                <View style={[styles.labelBox, { opacity: markerOpacity }]}>
+                  <Text style={styles.labelText}>
+                    {`${marker.title || `Task fgfgfgf${index + 1}`}${
+                      !isAvailable && !isCompleted ? " 🔒" : ""
+                    }`}
+                  </Text>
                 </View>
               </View>
             </Marker>
@@ -298,6 +391,13 @@ export default function MapPage() {
             }
           }}
         />
+        {showPasswordModal && (
+          <PasswordModal
+            visible={showPasswordModal}
+            onClose={() => setShowPasswordModal(false)}
+            onSuccess={handlePasswordSuccess}
+          />
+        )}
       </View>
 
       <View style={styles.timerContainer}>
@@ -336,6 +436,7 @@ export default function MapPage() {
   );
 }
 
+// Styles remain the same...
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -418,17 +519,13 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 50,
-    // borderWidth: 1,
-    // borderColor: "#003366",
   },
   dotFilled: {
     backgroundColor: "white",
   },
-  // dotEmpty: {
-  //   backgroundColor: "#003366",
-  // },
   markerContainer: {
-    alignItems: "center",
+    alignItems: "left",
+    justifyContent: "center",
   },
   markerIcon: {
     width: 36,
@@ -436,23 +533,26 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#003C5F", // default (will be overridden by company.theme.primary)
+    backgroundColor: "#003C5F",
     borderWidth: 2,
     borderColor: "#fff",
+    marginBottom: -8,
   },
   labelBox: {
     marginTop: 4,
-    backgroundColor: "#",
-    paddingVertical: 24,
+    backgroundColor: "white",
+    paddingHorizontal: 8,
+    paddingVertical: 0,
     borderRadius: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
+    minWidth: 250,
   },
   labelText: {
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: "600",
     color: "#1D1B20",
   },
@@ -473,10 +573,8 @@ const styles = StyleSheet.create({
   recenterButton: {
     flexDirection: "row",
     alignItems: "center",
-
     paddingVertical: 12,
     paddingHorizontal: 36,
-    // borderRadius: 25,
   },
   recenterIcon: {
     color: "white",
@@ -489,9 +587,8 @@ const styles = StyleSheet.create({
   },
   timerContainer: {
     position: "absolute",
-    bottom: 40,
-    left: "50%",
-    transform: [{ translateX: -150 }],
+    bottom: 60,
+    right: 20,
     zIndex: 1,
   },
   timerBox: {
@@ -532,10 +629,10 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     position: "absolute",
-    backgroundColor: "white",
+    backgroundColor: "transparent",
     borderRadius: 20,
     padding: 10,
-    bottom: 40,
+    bottom: 60,
     left: 20,
     zIndex: 1,
   },

@@ -43,11 +43,14 @@ export default function DrawingPage({
               style={styles.drawingImage}
             />
             <Text style={styles.subText}>{activity.prompt}</Text>
-            <ThemedButton title="Start drawing" onPress={() => setStep(false)} />
+            <ThemedButton
+              title="Start drawing"
+              onPress={() => setStep(false)}
+            />
           </View>
         )}
 
-        {!step  && <DrawingBoard activity={activity} onNext={onNext} />}
+        {!step && <DrawingBoard activity={activity} onNext={onNext} />}
       </View>
     </View>
   );
@@ -106,8 +109,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   drawingImage: {
-    width: 550,
-    height: 400,
+    width: "100%",
+    height: "50%",
     resizeMode: "contain",
     marginBottom: 16,
   },

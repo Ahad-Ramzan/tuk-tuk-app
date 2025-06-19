@@ -36,7 +36,7 @@ export default function VideoPage({ activity, onNext }) {
   const cameraRef = useRef(null);
   const { company } = useTheme();
   const Score = activity.on_app ? points : activity.score;
-  const videoTime = activity.video_time;
+  const videoTime = activity.video_timer;
   const player = useVideoPlayer(recordedVideo, (player) => {
     player.loop = true;
     player.muted = false;
@@ -95,8 +95,8 @@ export default function VideoPage({ activity, onNext }) {
       try {
         setIsRecording(true);
         const video = await cameraRef.current.recordAsync({
-          quality: "720p",
-          maxDuration: videoTime || 20,
+          quality: "480p",
+          maxDuration: videoTime,
           mute: false,
         });
         setRecordedVideo(video.uri);
@@ -219,18 +219,16 @@ export default function VideoPage({ activity, onNext }) {
                 />
               )
             ) : (
-              <TouchableOpacity
-                style={styles.primaryBtn}
+              <ThemedButton
+                title={isSubmitting ? "Submitting..." : "Submit"}
+                disabled={isSubmitting}
                 onPress={handleSubmit}
-              >
-                <Text style={styles.primaryText}>Submit</Text>
-              </TouchableOpacity>
+              />
             )}
           </View>
           <ScoreSetter
             isVisible={isActivityCompleted}
             onClose={handleCloseModal}
-            
           />
         </View>
       ) : isCameraOpen ? (
@@ -358,6 +356,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 4,
+    marginBottom: 60,
     borderColor: "rgba(255,255,255,0.3)",
   },
   recordButtonActive: {
@@ -413,8 +412,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   cameraWrapper: {
-    width: "100%",
-    height: 400,
+    width: "80%",
+    height: "45%",
     borderRadius: 12,
     overflow: "hidden",
     marginBottom: 20,

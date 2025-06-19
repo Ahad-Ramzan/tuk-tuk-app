@@ -30,6 +30,8 @@ export default function DrawingBoard({ activity, onNext }) {
   });
   const canvasRef = useCanvasRef();
   const [scoreSelected, setScoreSelected] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [mode, setMode] = useState("pen");
   const [paths, setPaths] = useState([]);
@@ -94,90 +96,98 @@ export default function DrawingBoard({ activity, onNext }) {
     return () => subscription?.remove();
   }, []);
 
-
-const handleSubmit = async () => {
-  try {
-    if (!canvasRef.current || !activity) {
-      Alert.alert("Error", "Missing canvas or activity data.");
-      return;
-    }
-
-    const image = canvasRef.current.makeImageSnapshot();
-    if (!image) {
-      Alert.alert("Error", "Failed to capture image snapshot.");
-      return;
-    }
-
-    const base64 = image.encodeToBase64(ImageFormat.PNG);
-    const fileUrl = FileSystem.documentDirectory + "drawing.png";
-
-    await FileSystem.writeAsStringAsync(fileUrl, base64, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    const fileUri = fileUrl;
-    const fileName = fileUri.split("/").pop();
-    const fileType = fileName.split(".").pop();
-
-    const formPayload = {
-      activity: activity.id,
-      latitude: activity.location_lat,
-      longitude: activity.location_lng,
-      fileUri,
-      fileName,
-      fileType,
-      driver_score: activity.on_app ? Score : null,
-    };
-
-    const token = await AsyncStorage.getItem("AUTH_TOKEN");
-    const net = await isConnected();
-
-    if (net ) {
-      const formData = new FormData();
-      formData.append("activity", activity.id);
-      formData.append("latitude", activity.location_lat);
-      formData.append("longitude", activity.location_lng);
-      formData.append("file", {
-        uri: fileUri,
-        name: fileName,
-        type: `image/${fileType}`,
-      });
-      if (activity.on_app) {
-        formData.append("driver_score", Score);
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      if (!canvasRef.current || !activity) {
+        Alert.alert("Error", "Missing canvas or activity data.");
+        return;
       }
 
-      await fetch(
-        "https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/",
-        {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "multipart/form-data",
-            Authorization: `token ${token}`,
-          },
-          body: formData,
+      const image = canvasRef.current.makeImageSnapshot();
+      if (!image) {
+        Alert.alert("Error", "Failed to capture image snapshot.");
+        return;
+      }
+
+      const base64 = image.encodeToBase64(ImageFormat.PNG);
+      const fileUrl = FileSystem.documentDirectory + "drawing.png";
+
+      await FileSystem.writeAsStringAsync(fileUrl, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const fileUri = fileUrl;
+      const fileName = fileUri.split("/").pop();
+      const fileType = fileName.split(".").pop();
+
+      const formPayload = {
+        activity: activity.id,
+        latitude: activity.location_lat,
+        longitude: activity.location_lng,
+        fileUri,
+        fileName,
+        fileType,
+        driver_score: activity.on_app ? Score : null,
+      };
+
+      const token = await AsyncStorage.getItem("AUTH_TOKEN");
+      const net = await isConnected();
+
+      if (net) {
+        const formData = new FormData();
+        formData.append("activity", activity.id);
+        formData.append("latitude", activity.location_lat);
+        formData.append("longitude", activity.location_lng);
+        formData.append("file", {
+          uri: fileUri,
+          name: fileName,
+          type: `image/${fileType}`,
+        });
+        if (activity.on_app) {
+          formData.append("driver_score", Score);
         }
-      );
 
-      addPagePoints(Score);
-      onNext();
-    } else {
-      // Save offline if no internet
-      const id = await generateOfflineKey();
-      const offlineQueue = JSON.parse(await AsyncStorage.getItem("offline_submissions1")) || {};
-      offlineQueue[id] = formPayload;
-      await AsyncStorage.setItem("offline_submissions1", JSON.stringify(offlineQueue));
-      console.log("Offline Queue: DrawingCanvas page", offlineQueue);
-      Alert.alert("Saved Offline", "Submission will be uploaded when internet is available.");
-      addPagePoints(Score);
-      onNext();
+        await fetch(
+          "https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/",
+          {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "multipart/form-data",
+              Authorization: `token ${token}`,
+            },
+            body: formData,
+          }
+        );
+
+        addPagePoints(Score);
+        onNext();
+      } else {
+        // Save offline if no internet
+        const id = await generateOfflineKey();
+        const offlineQueue =
+          JSON.parse(await AsyncStorage.getItem("offline_submissions1")) || {};
+        offlineQueue[id] = formPayload;
+        await AsyncStorage.setItem(
+          "offline_submissions1",
+          JSON.stringify(offlineQueue)
+        );
+        console.log("Offline Queue: DrawingCanvas page", offlineQueue);
+        Alert.alert(
+          "Saved Offline",
+          "Submission will be uploaded when internet is available."
+        );
+        addPagePoints(Score);
+        onNext();
+      }
+    } catch (error) {
+      console.error("Submission failed:", error);
+      Alert.alert("Error", "Something went wrong while submitting.");
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (error) {
-    console.error("Submission failed:", error);
-    Alert.alert("Error", "Something went wrong while submitting.");
-  }
-};
-
+  };
 
   const currentPath = Skia.Path.Make();
   if (
@@ -271,7 +281,11 @@ const handleSubmit = async () => {
 
         {activity.on_app ? (
           scoreSelected ? (
-            <ThemedButton title="Submit" onPress={handleSubmit} />
+            <ThemedButton
+              title={isSubmitting ? "Submitting..." : "Submit"}
+              disabled={isSubmitting}
+              onPress={handleSubmit}
+            />
           ) : (
             <ThemedButton
               title="Assign Score"
@@ -279,7 +293,11 @@ const handleSubmit = async () => {
             />
           )
         ) : (
-          <ThemedButton title="Submit" onPress={handleSubmit} />
+          <ThemedButton
+            title={isSubmitting ? "Submitting..." : "Submit"}
+            disabled={isSubmitting}
+            onPress={handleSubmit}
+          />
         )}
         <ScoreSetter
           isVisible={isActivityCompleted}

@@ -13,6 +13,7 @@ import {
 import { AuthContext } from "@/context/AuthContext";
 import useAuth from "@/hooks/useAuth";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -67,6 +68,8 @@ export default function LoginScreen() {
 
     try {
       await login(email.trim(), pin);
+      await AsyncStorage.setItem("USER_EMAIL", email.trim());
+      await AsyncStorage.setItem("USER_PIN", pin);
       router.push("/");
     } catch (err) {
       setError("Login failed. Please check your email or password.");

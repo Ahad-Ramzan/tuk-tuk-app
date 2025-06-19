@@ -18,12 +18,12 @@ export default function PointsScreen() {
   const points = grandTotalPoints;
   // console.log(activeChallenge, "activeChallenge");
   const handleExit = () => {
-    const payload = {
-      challenge_id: activeChallenge?.id,
-      is_active: false,
-    };
+    // const payload = {
+    //   challenge_id: activeChallenge?.id,
+    //   is_active: false,
+    // };
 
-    postActiveChallenge(payload);
+    // postActiveChallenge(payload);
     resetAllPoints();
     resetCompletedTaskIds();
     router.push("/");
@@ -78,8 +78,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   logo: {
-    width: 140,
-    height: 60,
+    width: 160,
+    height: 80,
     resizeMode: "contain",
     position: "absolute",
     top: 40,
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     height: 280,
     resizeMode: "contain",
     marginVertical: 20,
-    marginTop: -40,
+    marginTop: -150,
   },
   qrSection: {
     flexDirection: "row",

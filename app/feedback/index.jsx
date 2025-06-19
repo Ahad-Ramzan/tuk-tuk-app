@@ -59,8 +59,7 @@ const CurvedText = ({ text = "" }) => {
 // Main FeedbackScreen
 const FeedbackScreen = () => {
   const { completeActivity, completedTask, selectedTask } = useChallengeStore();
-  const { currentActivityPoints, grandTotalPoints } =
-    useChallengeStore();
+  const { currentActivityPoints, grandTotalPoints } = useChallengeStore();
 
   const getFeedback = () => {
     return FEEDBACK_DATA.find(
@@ -106,10 +105,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     zIndex: 12,
+    marginBottom: -60,
   },
   starImage: {
     width: 520,
-    height: 250,
+    height: 200,
     marginVertical: 20,
     marginTop: -140,
   },
@@ -127,13 +127,14 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     position: "absolute",
-    bottom: 40,
+    bottom: 60,
     right: 20,
     zIndex: 20,
   },
   curvedTextContainer: {
     width: 400,
     height: 100,
+    marginTop: 140,
     position: "relative",
     justifyContent: "center",
     alignItems: "center",

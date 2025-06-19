@@ -6,7 +6,16 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import React, { useRef, useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Dimensions,
+} from "react-native";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export default function PhotoPage({ activity, onNext }) {
   const { addPagePoints, points, ThemedLogo } = useChallengeStore();
@@ -78,7 +87,7 @@ export default function PhotoPage({ activity, onNext }) {
 
   const handleSubmit = async () => {
     if (!photo) return;
-    setSubmitted(true)
+    setSubmitted(true);
     const fileUri = photo;
     const fileName = fileUri.split("/").pop();
     const fileType = fileName.split(".").pop();
@@ -115,7 +124,7 @@ export default function PhotoPage({ activity, onNext }) {
       onNext();
     } catch (error) {
       console.error("❌ Upload failed:", error.response?.data || error.message);
-      setSubmitted(false)
+      setSubmitted(false);
     }
     addPagePoints(Score);
   };
@@ -151,14 +160,24 @@ export default function PhotoPage({ activity, onNext }) {
       {photo ? (
         <View style={styles.inner}>
           <Text style={styles.title}>Happy with your photo?</Text>
-          <Image source={{ uri: photo }} style={styles.photoPreview} />
+          <View style={styles.photoPreviewContainer}>
+            <Image
+              source={{ uri: photo }}
+              style={styles.photoPreview}
+              resizeMode="contain"
+            />
+          </View>
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.outlineBtn} onPress={retakePhoto}>
               <Text style={styles.outlineText}>Retake</Text>
             </TouchableOpacity>
             {activity.on_app ? (
               scoreSelected ? (
-                <ThemedButton title={submitted ? "Submitting..." : "Submit"} onPress={handleSubmit} />
+                <ThemedButton
+                  disabled={submitted}
+                  title={submitted ? "Submitting..." : "Submit"}
+                  onPress={handleSubmit}
+                />
               ) : (
                 <ThemedButton
                   title="Assign Score"
@@ -166,13 +185,11 @@ export default function PhotoPage({ activity, onNext }) {
                 />
               )
             ) : (
-              <TouchableOpacity
-                style={styles.primaryBtn}
-                onPress={submitted ? undefined : handleSubmit}
+              <ThemedButton
                 disabled={submitted}
-              >
-                <Text style={styles.primaryText}>{submitted ? "Submitting..." : "Submit"}</Text>
-              </TouchableOpacity>
+                title={submitted ? "Submitting..." : "Submit"}
+                onPress={handleSubmit}
+              />
             )}
           </View>
           <ScoreSetter
@@ -185,7 +202,7 @@ export default function PhotoPage({ activity, onNext }) {
           <CameraView
             ref={cameraRef}
             style={styles.fullScreenCamera}
-            facing="front"
+            facing="back"
           />
           <View style={styles.captureContainer}>
             <TouchableOpacity
@@ -261,8 +278,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   cameraWrapper: {
-    width: "100%",
-    height: 400,
+    width: "80%",
+    height: "45%",
     borderRadius: 12,
     overflow: "hidden",
     marginBottom: 20,
@@ -270,12 +287,6 @@ const styles = StyleSheet.create({
   placeholder: {
     width: "100%",
     height: "100%",
-  },
-  photoPreview: {
-    width: "100%",
-    height: 400,
-    borderRadius: 12,
-    marginBottom: 20,
   },
   descriptionWrapper: {
     alignItems: "center",
@@ -290,9 +301,37 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     gap: 12,
+    marginTop: 20,
   },
   primaryBtn: {
     backgroundColor: "#0f172a",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    marginHorizontal: 8,
+  },
+  photoPreviewContainer: {
+    width: screenWidth * 0.9,
+    height: screenHeight * 0.5,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "#f0f0f0",
+    marginBottom: 10,
+    shadowColor: "#000",
+    // shadowOffset: {
+    //   width: 0,
+    //   height: 2,
+    // },
+    // shadowOpacity: 0.25,
+    // shadowRadius: 3.84,
+    // elevation: 5,
+  },
+  photoPreview: {
+    width: "100%",
+    height: "100%",
+  },
+  disabledBtn: {
+    backgroundColor: "#94a3b8",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 24,
@@ -323,7 +362,7 @@ const styles = StyleSheet.create({
   },
   captureContainer: {
     position: "absolute",
-    bottom: 40,
+    bottom: 80,
     alignSelf: "center",
     zIndex: 20,
   },

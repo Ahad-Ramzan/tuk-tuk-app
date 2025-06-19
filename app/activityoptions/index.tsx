@@ -215,7 +215,9 @@ const styles = StyleSheet.create({
   },
   content: {
     width: "90%",
+    height: "75%",
     padding: 16,
+    marginBottom: 36,
     alignItems: "center",
     zIndex: 10,
   },
@@ -227,8 +229,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   illustration: {
-    width: 280,
-    height: 260,
+    width: "50%",
+    height: "50%",
     marginBottom: 16,
   },
   subtitle: {

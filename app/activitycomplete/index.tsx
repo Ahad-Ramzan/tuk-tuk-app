@@ -73,12 +73,6 @@ export default function ActivityPage({
           resizeMode="contain"
         />
         <Text style={styles.subtitle}>{activity.prompt}</Text>
-
-        {/* <ThemedButton
-          title="Activity Completed"
-          onPress={handleActivityCompleted}
-         
-        /> */}
         {activity.on_app ? (
           scoreSelected ? (
             <ThemedButton title="Submit" onPress={handleSubmit} />
@@ -142,8 +136,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   illustration: {
-    width: Dimensions.get("window").width * 0.8,
-    height: 400,
+    width: Dimensions.get("window").width * 0.9,
+    height: Dimensions.get("window").height * 0.4,
     marginBottom: 16,
   },
   subtitle: {
