@@ -1,16 +1,7 @@
-import { useChallengeStore } from "@/store/challengeStore";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+//DrawingCanvas
+//expo install react-native-svg
 
-import {
-  Canvas,
-  ImageFormat,
-  Path,
-  Skia,
-  useCanvasRef,
-} from "@shopify/react-native-skia";
-import * as FileSystem from "expo-file-system";
-
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   Alert,
   Dimensions,
@@ -19,67 +10,49 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Svg, Path } from "react-native-svg";
+import { useChallengeStore } from "@/store/challengeStore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
 import ScoreSetter from "./ScoreSetter";
 import ThemedButton from "./ThemedButton";
 import { isConnected } from "@/utility/Netinfo";
 
 export default function DrawingBoard({ activity, onNext }) {
   const { addPagePoints, points } = useChallengeStore();
-  const [dimensions, setDimensions] = React.useState({
+  const [dimensions, setDimensions] = useState({
     window: Dimensions.get("window"),
   });
-  const canvasRef = useCanvasRef();
   const [scoreSelected, setScoreSelected] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [mode, setMode] = useState("pen");
   const [paths, setPaths] = useState([]);
   const [currentPoints, setCurrentPoints] = useState([]);
-  const currentPointsRef = useRef([]);
 
   const color = mode === "pen" ? "black" : "white";
   const strokeWidth = mode === "pen" ? 4 : 10;
   const Score = activity.on_app ? points : activity.score;
 
-  const generateOfflineKey = () => {
-    const timestamp = Date.now().toString(36); // base36 to shorten
-    const random = Math.random().toString(36).substring(2, 10); // 8-char random string
-    return `${timestamp}-${random}`;
-  };
-
   const handleTouchStart = (evt) => {
     const { locationX, locationY } = evt.nativeEvent;
-    const newPoints = [[locationX, locationY]];
-    currentPointsRef.current = newPoints;
-    setCurrentPoints(newPoints);
-  };
-  const handleCloseModal = () => {
-    setIsActivityCompleted(false);
-    setScoreSelected(true);
-  };
-  const handleActivityCompleted = () => {
-    setIsActivityCompleted(true);
+    setCurrentPoints([[locationX, locationY]]);
   };
 
   const handleTouchMove = (evt) => {
     const { locationX, locationY } = evt.nativeEvent;
-    const updatedPoints = [...currentPointsRef.current, [locationX, locationY]];
-    currentPointsRef.current = updatedPoints;
-    setCurrentPoints(updatedPoints);
+    setCurrentPoints((prev) => [...prev, [locationX, locationY]]);
   };
 
   const handleTouchEnd = () => {
-    const points = currentPointsRef.current;
-    if (points.length > 0) {
-      const path = Skia.Path.Make();
-      path.moveTo(points[0][0], points[0][1]);
-      for (let i = 1; i < points.length; i++) {
-        path.lineTo(points[i][0], points[i][1]);
-      }
-      setPaths((prev) => [...prev, { path, color, strokeWidth }]);
+    if (currentPoints.length > 0) {
+      const newPath = currentPoints.reduce((acc, point, index) => {
+        return index === 0
+          ? `M ${point[0]} ${point[1]} `
+          : `${acc} L ${point[0]} ${point[1]} `;
+      }, "");
+      setPaths((prev) => [...prev, { path: newPath, color, strokeWidth }]);
     }
-    currentPointsRef.current = [];
     setCurrentPoints([]);
   };
 
@@ -88,7 +61,7 @@ export default function DrawingBoard({ activity, onNext }) {
     setCurrentPoints([]);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const subscription = Dimensions.addEventListener("change", ({ window }) => {
       setDimensions({ window });
     });
@@ -99,33 +72,31 @@ export default function DrawingBoard({ activity, onNext }) {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      if (!canvasRef.current || !activity) {
-        Alert.alert("Error", "Missing canvas or activity data.");
+      if (!activity) {
+        Alert.alert("Error", "Missing activity data.");
         return;
       }
 
-      const image = canvasRef.current.makeImageSnapshot();
-      if (!image) {
-        Alert.alert("Error", "Failed to capture image snapshot.");
-        return;
-      }
+      const fileUrl = FileSystem.documentDirectory + "drawing.svg";
+      const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${
+        dimensions.window.width * 0.9
+      }" height="${dimensions.window.height * 0.65}">${paths
+        .map(
+          (p) =>
+            `<path d="${p.path}" fill="none" stroke="${p.color}" stroke-width="${p.strokeWidth}" />`
+        )
+        .join("")}</svg>`;
 
-      const base64 = image.encodeToBase64(ImageFormat.PNG);
-      const fileUrl = FileSystem.documentDirectory + "drawing.png";
+      await FileSystem.writeAsStringAsync(fileUrl, svgContent);
 
-      await FileSystem.writeAsStringAsync(fileUrl, base64, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      const fileUri = fileUrl;
-      const fileName = fileUri.split("/").pop();
+      const fileName = fileUrl.split("/").pop();
       const fileType = fileName.split(".").pop();
 
       const formPayload = {
         activity: activity.id,
         latitude: activity.location_lat,
         longitude: activity.location_lng,
-        fileUri,
+        fileUri: fileUrl,
         fileName,
         fileType,
         driver_score: activity.on_app ? Score : null,
@@ -140,7 +111,7 @@ export default function DrawingBoard({ activity, onNext }) {
         formData.append("latitude", activity.location_lat);
         formData.append("longitude", activity.location_lng);
         formData.append("file", {
-          uri: fileUri,
+          uri: fileUrl,
           name: fileName,
           type: `image/${fileType}`,
         });
@@ -165,7 +136,7 @@ export default function DrawingBoard({ activity, onNext }) {
         onNext();
       } else {
         // Save offline if no internet
-        const id = await generateOfflineKey();
+        const id = generateOfflineKey();
         const offlineQueue =
           JSON.parse(await AsyncStorage.getItem("offline_submissions1")) || {};
         offlineQueue[id] = formPayload;
@@ -173,7 +144,6 @@ export default function DrawingBoard({ activity, onNext }) {
           "offline_submissions1",
           JSON.stringify(offlineQueue)
         );
-        console.log("Offline Queue: DrawingCanvas page", offlineQueue);
         Alert.alert(
           "Saved Offline",
           "Submission will be uploaded when internet is available."
@@ -189,22 +159,15 @@ export default function DrawingBoard({ activity, onNext }) {
     }
   };
 
-  const currentPath = Skia.Path.Make();
-  if (
-    currentPoints.length > 0 &&
-    currentPoints.every(
-      ([x, y]) => typeof x === "number" && typeof y === "number"
-    )
-  ) {
-    currentPath.moveTo(currentPoints[0][0], currentPoints[0][1]);
-    for (let i = 1; i < currentPoints.length; i++) {
-      currentPath.lineTo(currentPoints[i][0], currentPoints[i][1]);
-    }
-  }
+  const generateOfflineKey = () => {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 10);
+    return `${timestamp}-${random}`;
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Time to darw!</Text>
+      <Text style={styles.title}>Time to draw!</Text>
 
       <View
         style={[
@@ -215,9 +178,9 @@ export default function DrawingBoard({ activity, onNext }) {
           },
         ]}
       >
-        <Canvas
-          ref={canvasRef}
-          style={styles.canvas}
+        <Svg
+          height="100%"
+          width="100%"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -225,21 +188,25 @@ export default function DrawingBoard({ activity, onNext }) {
           {paths.map((p, index) => (
             <Path
               key={index}
-              path={p.path}
-              color={p.color}
-              style="stroke"
+              d={p.path}
+              stroke={p.color}
               strokeWidth={p.strokeWidth}
+              fill="none"
             />
           ))}
           {currentPoints.length > 0 && (
             <Path
-              path={currentPath}
-              color={color}
-              style="stroke"
+              d={currentPoints.reduce((acc, point, index) => {
+                return index === 0
+                  ? `M ${point[0]} ${point[1]} `
+                  : `${acc} L ${point[0]} ${point[1]} `;
+              }, "")}
+              stroke={color}
               strokeWidth={strokeWidth}
+              fill="none"
             />
           )}
-        </Canvas>
+        </Svg>
 
         {/* Placeholder */}
         {paths.length === 0 && currentPoints.length === 0 && (
@@ -289,7 +256,7 @@ export default function DrawingBoard({ activity, onNext }) {
           ) : (
             <ThemedButton
               title="Assign Score"
-              onPress={handleActivityCompleted}
+              onPress={() => setIsActivityCompleted(true)}
             />
           )
         ) : (
@@ -301,7 +268,7 @@ export default function DrawingBoard({ activity, onNext }) {
         )}
         <ScoreSetter
           isVisible={isActivityCompleted}
-          onClose={handleCloseModal}
+          onClose={() => setIsActivityCompleted(false)}
         />
       </View>
     </View>
@@ -323,17 +290,11 @@ const styles = StyleSheet.create({
   },
   canvasContainer: {
     position: "relative",
-    height: Dimensions.get("window").height * 0.65,
-    width: Dimensions.get("window").width * 0.9,
     borderWidth: 2,
     borderColor: "#CBD5E1", // light gray
     borderRadius: 12,
     backgroundColor: "#fff",
     overflow: "hidden",
-  },
-  canvas: {
-    width: "100%",
-    height: "100%",
   },
   placeholderContainer: {
     position: "absolute",
@@ -345,7 +306,6 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 20,
     color: "#A0A0AA",
-    // fontStyle: "italic",
   },
   insideToolColumn: {
     position: "absolute",
@@ -360,7 +320,6 @@ const styles = StyleSheet.create({
   toolBtn: {
     padding: 10,
     borderRadius: 8,
-    // backgroundColor: "#e2e8f0",
   },
   activeTool: {
     backgroundColor: "#e2e8f0",
@@ -385,13 +344,5 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderColor: "#94a3b8",
     borderWidth: 1,
-  },
-  submitBtn: {
-    backgroundColor: "#0f172a",
-    padding: 12,
-    borderRadius: 24,
-  },
-  submitText: {
-    color: "#fff",
   },
 });

@@ -34,7 +34,6 @@ export default function SlideshowScreen() {
   const [totalCount, setTotalCount] = useState(0);
   const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
   const [prevPageUrl, setPrevPageUrl] = useState<string | null>(null);
-
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace("/login");
@@ -55,7 +54,6 @@ export default function SlideshowScreen() {
     const token = await AsyncStorage.getItem("user_token");
     const online = await isConnected();
     console.log(online, "connection status index.jsx");
-
 
     if (online) {
       try {
@@ -156,13 +154,17 @@ export default function SlideshowScreen() {
       />
 
       {/* Top Right Logos */}
+      <ThemedButton
+        title="Logout"
+        onPress={handleLogout}
+        style={styles.logoutButton}
+      />
       <View style={styles.topRightContainer}>
-        <TouchableOpacity onPress={handleLogout}>
-          <Image
-            source={require("@/assets/icons/Vector.png")}
-            style={styles.logo}
-          />
-        </TouchableOpacity>
+        <Image
+          source={require("@/assets/icons/Vector.png")}
+          style={styles.logo}
+        />
+
         <View style={styles.divider} />
         <Image source={company.logo} style={styles.logo} />
       </View>
@@ -239,6 +241,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 40,
     marginRight: 20,
+  },
+  logoutButton: {
+    backgroundColor: "#003366",
+    position: "absolute",
+    top: 40,
+    left: 20,
   },
   logo: {
     width: 60,

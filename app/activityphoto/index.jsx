@@ -5,7 +5,7 @@ import { useChallengeStore } from "@/store/challengeStore";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   Image,
   StyleSheet,
@@ -13,9 +13,9 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  Alert,
+  Linking,
 } from "react-native";
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export default function PhotoPage({ activity, onNext }) {
   const { addPagePoints, points, ThemedLogo } = useChallengeStore();
@@ -25,13 +25,50 @@ export default function PhotoPage({ activity, onNext }) {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [scoreSelected, setScoreSelected] = useState(false);
+  const [screenData, setScreenData] = useState(Dimensions.get('window'));
   const cameraRef = useRef(null);
   const { company } = useTheme();
   const Score = activity.on_app ? points : activity.score;
 
+  // Handle screen dimension changes for rotation
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setScreenData(window);
+    });
+
+    return () => subscription?.remove();
+  }, []);
+
   if (!permission) {
     return null;
   }
+
+  // Enhanced permission request handler
+  const handlePermissionRequest = async () => {
+    try {
+      const result = await requestPermission();
+      if (!result.granted) {
+        // Show alert for manual settings navigation
+        Alert.alert(
+          "Camera Permission Required",
+          "Camera access is needed to take photos. Please enable camera permission in your device settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { 
+              text: "Open Settings", 
+              onPress: () => {
+                // For React Native, you might need to use Linking or expo-linking
+                Linking.openSettings(); // Uncomment if you have linking imported
+              }
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Permission request error:', error);
+      Alert.alert("Error", "Failed to request camera permission. Please try again.");
+    }
+  };
 
   if (!permission.granted) {
     return (
@@ -50,8 +87,9 @@ export default function PhotoPage({ activity, onNext }) {
           permission.
         </Text>
         <TouchableOpacity
-          onPress={requestPermission}
+          onPress={handlePermissionRequest}
           style={cameraPermissionStyles.cameraPermissionButton}
+          activeOpacity={0.7}
         >
           <Text style={cameraPermissionStyles.cameraPermissionButtonText}>
             Grant Permission
@@ -63,9 +101,17 @@ export default function PhotoPage({ activity, onNext }) {
 
   const takePhoto = async () => {
     if (cameraRef.current) {
-      const photoData = await cameraRef.current.takePictureAsync();
-      setPhoto(photoData.uri);
-      setIsCameraOpen(false);
+      try {
+        const photoData = await cameraRef.current.takePictureAsync({
+          quality: 0.8,
+          base64: false,
+        });
+        setPhoto(photoData.uri);
+        setIsCameraOpen(false);
+      } catch (error) {
+        console.error('Photo capture error:', error);
+        Alert.alert("Error", "Failed to take photo. Please try again.");
+      }
     }
   };
 
@@ -74,6 +120,7 @@ export default function PhotoPage({ activity, onNext }) {
     setSubmitted(false);
     setIsCameraOpen(true);
   };
+
   const payLoad = {
     activity: activity.id,
     latitude: activity.location_lat,
@@ -133,9 +180,26 @@ export default function PhotoPage({ activity, onNext }) {
     setIsActivityCompleted(false);
     setScoreSelected(true);
   };
+  
   const handleActivityCompleted = () => {
     setIsActivityCompleted(true);
   };
+
+  // Dynamic styles based on current screen dimensions
+  const dynamicStyles = StyleSheet.create({
+    photoPreviewContainer: {
+      width: screenData.width * 0.9,
+      height: Math.min(screenData.height * 0.4, screenData.width * 0.8), 
+      overflow: "hidden",
+    },
+    cameraWrapper: {
+      width: screenData.width * 0.8,
+      height: Math.min(screenData.height * 0.35, screenData.width * 0.75),
+      borderRadius: 12,
+      overflow: "hidden",
+      marginBottom: 20,
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -160,7 +224,7 @@ export default function PhotoPage({ activity, onNext }) {
       {photo ? (
         <View style={styles.inner}>
           <Text style={styles.title}>Happy with your photo?</Text>
-          <View style={styles.photoPreviewContainer}>
+          <View style={dynamicStyles.photoPreviewContainer}>
             <Image
               source={{ uri: photo }}
               style={styles.photoPreview}
@@ -168,7 +232,11 @@ export default function PhotoPage({ activity, onNext }) {
             />
           </View>
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.outlineBtn} onPress={retakePhoto}>
+            <TouchableOpacity 
+              style={styles.outlineBtn} 
+              onPress={retakePhoto}
+              activeOpacity={0.7}
+            >
               <Text style={styles.outlineText}>Retake</Text>
             </TouchableOpacity>
             {activity.on_app ? (
@@ -208,13 +276,14 @@ export default function PhotoPage({ activity, onNext }) {
             <TouchableOpacity
               style={styles.shutterButton}
               onPress={takePhoto}
+              activeOpacity={0.7}
             />
           </View>
         </View>
       ) : (
         <View style={styles.inner}>
           <Text style={styles.title}>Take a photo!</Text>
-          <View style={styles.cameraWrapper}>
+          <View style={dynamicStyles.cameraWrapper}>
             <Image
               source={require("@/assets/images/TakePhoto.png")}
               style={styles.placeholder}
@@ -277,13 +346,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
-  cameraWrapper: {
-    width: "80%",
-    height: "45%",
-    borderRadius: 12,
-    overflow: "hidden",
-    marginBottom: 20,
-  },
   placeholder: {
     width: "100%",
     height: "100%",
@@ -309,22 +371,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 24,
     marginHorizontal: 8,
-  },
-  photoPreviewContainer: {
-    width: screenWidth * 0.9,
-    height: screenHeight * 0.5,
-    borderRadius: 12,
-    overflow: "hidden",
-    backgroundColor: "#f0f0f0",
-    marginBottom: 10,
-    shadowColor: "#000",
-    // shadowOffset: {
-    //   width: 0,
-    //   height: 2,
-    // },
-    // shadowOpacity: 0.25,
-    // shadowRadius: 3.84,
-    // elevation: 5,
   },
   photoPreview: {
     width: "100%",
@@ -406,6 +452,14 @@ const cameraPermissionStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 32,
     borderRadius: 8,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   cameraPermissionButtonText: {
     color: "#fff",

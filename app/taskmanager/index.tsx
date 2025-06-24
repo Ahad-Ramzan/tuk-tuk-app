@@ -89,7 +89,7 @@ export default function ImagePage() {
 
     const loadComponent = async () => {
       if (!activity) return;
-
+      console.log("Loading activity component for:", activity.task_type);
       setLoading(true);
       setActivityComponent(null);
       setComponentError(null);
@@ -122,6 +122,7 @@ export default function ImagePage() {
         if (isMounted) {
           if (Component) {
             setActivityComponent(
+
               <Component activity={activity} onNext={handleNext} />
             );
           } else {

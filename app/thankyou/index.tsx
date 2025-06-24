@@ -1,23 +1,35 @@
 import { QRcode, star, welldone } from "@/assets/images";
 import ThemedButton from "@/components/ThemedButton";
+import PasswordModal from "@/components/PasswordModel";
 import { useTheme } from "@/context/ThemeContext";
 import { useChallengeStore } from "@/store/challengeStore";
 import { router } from "expo-router";
-import React from "react";
+import React, { useState } from "react"; // Add useState
 import { Image, StyleSheet, Text, View } from "react-native";
-import { postActiveChallenge } from "@/services/api";
+// import { postActiveChallenge } from "@/services/api";
 
 export default function PointsScreen() {
   const {
     resetAllPoints,
     grandTotalPoints,
-    activeChallenge,
+    // activeChallenge,
     resetCompletedTaskIds,
   } = useChallengeStore();
   const { company } = useTheme();
   const points = grandTotalPoints;
+  
+  // Add state for password modal
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
   // console.log(activeChallenge, "activeChallenge");
-  const handleExit = () => {
+  
+  // This function will be called when exit button is pressed
+  const handleExitPress = () => {
+    setShowPasswordModal(true);
+  };
+
+  // This function will be called when password is verified successfully
+  const handlePasswordSuccess = () => {
     // const payload = {
     //   challenge_id: activeChallenge?.id,
     //   is_active: false,
@@ -29,11 +41,16 @@ export default function PointsScreen() {
     router.push("/");
   };
 
+  // This function will be called when password modal is closed
+  const handlePasswordModalClose = () => {
+    setShowPasswordModal(false);
+  };
+
   return (
     <View style={styles.container}>
       {/* Exit Button */}
       <View style={styles.exitButton}>
-        <ThemedButton title="Exit" onPress={handleExit} />
+        <ThemedButton title="Exit" onPress={handleExitPress} />
       </View>
 
       {/* Company Logo */}
@@ -59,6 +76,13 @@ export default function PointsScreen() {
           </Text>
         </View>
       </View>
+
+      {/* Password Modal */}
+      <PasswordModal
+        visible={showPasswordModal}
+        onClose={handlePasswordModalClose}
+        onSuccess={handlePasswordSuccess}
+      />
     </View>
   );
 }
