@@ -6,7 +6,7 @@ import { useChallengeStore } from "@/store/challengeStore";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -151,7 +151,7 @@ export default function MapPage() {
       .filter(Boolean);
   };
 
-  const markers = extractTaskLocations(activeChallenge);
+ const markers = useMemo(() => extractTaskLocations(activeChallenge), [activeChallenge]);
 
   // Update marker positions when map region changes OR screen rotates
   useEffect(() => {

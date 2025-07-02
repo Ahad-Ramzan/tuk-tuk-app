@@ -10,7 +10,8 @@ import {
   useMicrophonePermissions,
 } from "expo-camera";
 import { CameraType, useVideoPlayer, VideoView } from "expo-video";
-import React, { useRef, useState } from "react";
+import { isConnected } from "@/utility/Netinfo";
+import React, { useRef, useState, useEffect } from "react";
 import {
   Alert,
   Image,
@@ -18,6 +19,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Linking,
+  Platform,
 } from "react-native";
 
 export default function VideoPage({ activity, onNext }) {
@@ -31,6 +34,8 @@ export default function VideoPage({ activity, onNext }) {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cameraPermissionRequesting, setCameraPermissionRequesting] = useState(false);
+  const [micPermissionRequesting, setMicPermissionRequesting] = useState(false);
 
   const { addPagePoints, points, ThemedLogo } = useChallengeStore();
   const cameraRef = useRef(null);
@@ -42,42 +47,266 @@ export default function VideoPage({ activity, onNext }) {
     player.muted = false;
   });
 
+  // Enhanced camera permission request handler
+  const handleCameraPermissionRequest = async () => {
+    if (cameraPermissionRequesting) return;
+    
+    setCameraPermissionRequesting(true);
+    
+    try {
+      console.log('Requesting camera permission...');
+      const result = await requestPermission();
+      
+      console.log('Camera permission result:', result);
+      
+      if (result.granted) {
+        console.log('Camera permission granted');
+      } else {
+        console.log('Camera permission denied');
+        
+        if (result.canAskAgain === false) {
+          Alert.alert(
+            "Camera Permission Required",
+            "Camera access has been permanently denied. Please enable it manually in your device settings to continue.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Open Settings", 
+                onPress: async () => {
+                  try {
+                    if (Platform.OS === 'android') {
+                      await Linking.openSettings();
+                    } else {
+                      await Linking.openURL('app-settings:');
+                    }
+                  } catch (error) {
+                    console.error('Failed to open settings:', error);
+                    Alert.alert("Error", "Could not open settings. Please manually enable camera permission in your device settings.");
+                  }
+                }
+              }
+            ]
+          );
+        } else {
+          Alert.alert(
+            "Camera Permission Required",
+            "This app needs camera access to record videos. Please grant permission to continue.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Try Again", 
+                onPress: () => {
+                  setTimeout(() => {
+                    setCameraPermissionRequesting(false);
+                    handleCameraPermissionRequest();
+                  }, 500);
+                }
+              }
+            ]
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Camera permission request error:', error);
+      Alert.alert(
+        "Permission Error", 
+        "Failed to request camera permission. Please try again or check your device settings.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Try Again", 
+            onPress: () => {
+              setTimeout(() => {
+                setCameraPermissionRequesting(false);
+                handleCameraPermissionRequest();
+              }, 500);
+            }
+          }
+        ]
+      );
+    } finally {
+      setCameraPermissionRequesting(false);
+    }
+  };
+
+  // Enhanced microphone permission request handler
+  const handleMicrophonePermissionRequest = async () => {
+    if (micPermissionRequesting) return;
+    
+    setMicPermissionRequesting(true);
+    
+    try {
+      console.log('Requesting microphone permission...');
+      const result = await requestMicrophonePermission();
+      
+      console.log('Microphone permission result:', result);
+      
+      if (result.granted) {
+        console.log('Microphone permission granted');
+      } else {
+        console.log('Microphone permission denied');
+        
+        if (result.canAskAgain === false) {
+          Alert.alert(
+            "Microphone Permission Required",
+            "Microphone access has been permanently denied. Please enable it manually in your device settings to continue.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Open Settings", 
+                onPress: async () => {
+                  try {
+                    if (Platform.OS === 'android') {
+                      await Linking.openSettings();
+                    } else {
+                      await Linking.openURL('app-settings:');
+                    }
+                  } catch (error) {
+                    console.error('Failed to open settings:', error);
+                    Alert.alert("Error", "Could not open settings. Please manually enable microphone permission in your device settings.");
+                  }
+                }
+              }
+            ]
+          );
+        } else {
+          Alert.alert(
+            "Microphone Permission Required",
+            "This app needs microphone access to record audio with videos. Please grant permission to continue.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Try Again", 
+                onPress: () => {
+                  setTimeout(() => {
+                    setMicPermissionRequesting(false);
+                    handleMicrophonePermissionRequest();
+                  }, 500);
+                }
+              }
+            ]
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Microphone permission request error:', error);
+      Alert.alert(
+        "Permission Error", 
+        "Failed to request microphone permission. Please try again or check your device settings.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Try Again", 
+            onPress: () => {
+              setTimeout(() => {
+                setMicPermissionRequesting(false);
+                handleMicrophonePermissionRequest();
+              }, 500);
+            }
+          }
+        ]
+      );
+    } finally {
+      setMicPermissionRequesting(false);
+    }
+  };
+
+  // Check permissions on component mount
+  useEffect(() => {
+    const checkPermissions = async () => {
+      if (permission === null) {
+        console.log('Camera permission is null, requesting...');
+        setTimeout(() => {
+          handleCameraPermissionRequest();
+        }, 100);
+      }
+      
+      if (microphonePermission === null) {
+        console.log('Microphone permission is null, requesting...');
+        setTimeout(() => {
+          handleMicrophonePermissionRequest();
+        }, 200);
+      }
+    };
+
+    checkPermissions();
+  }, []);
+
   if (!permission || !microphonePermission) {
-    return <View />;
+    return (
+      <View style={cameraStyles.permissionContainer}>
+        <Text style={cameraStyles.permissionTitle}>
+          Loading Permissions...
+        </Text>
+      </View>
+    );
   }
 
   if (!permission.granted || !microphonePermission.granted) {
+    const needsCameraPermission = !permission.granted;
+    const needsMicPermission = !microphonePermission.granted;
+
     return (
       <View style={cameraStyles.permissionContainer}>
         <Ionicons
-          name={!permission.granted ? "camera-outline" : "mic-outline"}
+          name={needsCameraPermission ? "camera-outline" : "mic-outline"}
           size={64}
-          color="#888"
+          color="#666"
+          style={cameraStyles.permissionIcon}
         />
         <Text style={cameraStyles.permissionTitle}>
-          {!permission.granted
+          {needsCameraPermission
             ? "Camera Access Needed"
             : "Microphone Access Needed"}
         </Text>
         <Text style={cameraStyles.permissionMessage}>
-          {!permission.granted
-            ? "To use this feature, we need access to your camera. Please grant permission."
-            : "To record video with audio, we need access to your microphone. Please grant permission."}
+          {needsCameraPermission
+            ? "To record videos, we need access to your device's camera. Please grant permission to continue."
+            : "To record video with audio, we need access to your device's microphone. Please grant permission to continue."}
         </Text>
+        
         <TouchableOpacity
-          onPress={
-            !permission.granted
-              ? requestPermission
-              : requestMicrophonePermission
-          }
-          style={cameraStyles.permissionButton}
+          onPress={needsCameraPermission ? handleCameraPermissionRequest : handleMicrophonePermissionRequest}
+          style={[
+            cameraStyles.permissionButton,
+            (cameraPermissionRequesting || micPermissionRequesting) && cameraStyles.permissionButtonDisabled
+          ]}
+          activeOpacity={0.7}
+          disabled={cameraPermissionRequesting || micPermissionRequesting}
         >
           <Text style={cameraStyles.permissionButtonText}>
-            {!permission.granted
-              ? "Grant Camera Access"
-              : "Grant Microphone Access"}
+            {(cameraPermissionRequesting || micPermissionRequesting) 
+              ? "Requesting..." 
+              : needsCameraPermission 
+                ? "Grant Camera Permission" 
+                : "Grant Microphone Permission"
+            }
           </Text>
         </TouchableOpacity>
+
+        {/* Settings button for permanently denied permissions */}
+        {((needsCameraPermission && permission?.canAskAgain === false) || 
+          (needsMicPermission && microphonePermission?.canAskAgain === false)) && (
+          <TouchableOpacity
+            onPress={async () => {
+              try {
+                if (Platform.OS === 'android') {
+                  await Linking.openSettings();
+                } else {
+                  await Linking.openURL('app-settings:');
+                }
+              } catch (error) {
+                console.error('Failed to open settings:', error);
+              }
+            }}
+            style={[cameraStyles.permissionButton, { marginTop: 10, backgroundColor: '#FF6B6B' }]}
+            activeOpacity={0.7}
+          >
+            <Text style={cameraStyles.permissionButtonText}>
+              Open Settings
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
@@ -86,6 +315,7 @@ export default function VideoPage({ activity, onNext }) {
     setIsActivityCompleted(false);
     setScoreSelected(true);
   };
+  
   const handleActivityCompleted = () => {
     setIsActivityCompleted(true);
   };
@@ -124,10 +354,47 @@ export default function VideoPage({ activity, onNext }) {
 
   const handleSubmit = async () => {
     if (!recordedVideo) return;
+
     setIsSubmitting(true);
+
     const fileUri = recordedVideo;
     const fileName = fileUri.split("/").pop();
     const fileType = fileName.split(".").pop();
+
+    const token = await AsyncStorage.getItem("AUTH_TOKEN");
+    const net = await isConnected();
+
+    const payload = {
+      activity: activity.id,
+      latitude: activity.location_lat,
+      longitude: activity.location_lng,
+      fileUri,
+      fileName,
+      fileType,
+      driver_score: activity.on_app ? points : null,
+      type: "video",
+    };
+
+    if (!net) {
+      try {
+        const rawQueue = await AsyncStorage.getItem("offline_submissions1");
+        const offlineQueue = rawQueue ? JSON.parse(rawQueue) : {};
+        const uniqueId = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        offlineQueue[uniqueId] = payload;
+        await AsyncStorage.setItem("offline_submissions1", JSON.stringify(offlineQueue));
+        Alert.alert("Offline", "You're offline. Video saved locally.");
+        addPagePoints(Score);
+        onNext();
+      } catch (err) {
+        console.error("❌ Failed to save offline video:", err);
+        Alert.alert("Error", "Could not save submission offline.");
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    // Online submission
     const formData = new FormData();
     formData.append("activity", activity.id);
     formData.append("latitude", activity.location_lat);
@@ -137,11 +404,10 @@ export default function VideoPage({ activity, onNext }) {
       name: fileName,
       type: `video/${fileType}`,
     });
+
     if (activity.on_app) {
       formData.append("driver_score", points);
     }
-
-    const token = await AsyncStorage.getItem("AUTH_TOKEN");
 
     try {
       await fetch(
@@ -152,8 +418,6 @@ export default function VideoPage({ activity, onNext }) {
             Accept: "application/json",
             "Content-Type": "multipart/form-data",
             Authorization: `token ${token}`,
-            "X-CSRFTOKEN":
-              "UWHYzLJQNZC5K3SdzWixpRZNpZtzPxY6CO2OUCcr3wkxdGMW1TcCpmPv5X5hAg3A",
           },
           body: formData,
         }
@@ -162,8 +426,9 @@ export default function VideoPage({ activity, onNext }) {
       onNext();
     } catch (error) {
       console.error("❌ Upload failed:", error.response?.data || error.message);
+      Alert.alert("Upload Failed", "Please try again.");
     } finally {
-      setIsSubmitting(true);
+      setIsSubmitting(false);
     }
   };
 
@@ -373,7 +638,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
   },
-
   logoWrapper: {
     position: "absolute",
     top: 40,
@@ -491,33 +755,49 @@ const styles = StyleSheet.create({
 const cameraStyles = StyleSheet.create({
   permissionContainer: {
     flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
     padding: 24,
+    backgroundColor: "#f8f8f8",
+  },
+  permissionIcon: {
+    marginBottom: 20,
   },
   permissionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginVertical: 12,
+    fontSize: 22,
+    fontWeight: "bold",
     color: "#333",
+    marginBottom: 12,
+    textAlign: "center",
   },
   permissionMessage: {
     fontSize: 16,
-    textAlign: "center",
     color: "#666",
+    textAlign: "center",
     marginBottom: 24,
     lineHeight: 22,
   },
   permissionButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#007bff",
     paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
     borderRadius: 8,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  permissionButtonDisabled: {
+    backgroundColor: "#cccccc",
   },
   permissionButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
   },
 });
+ 

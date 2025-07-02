@@ -1,13 +1,14 @@
 import ScoreSetter from "@/components/ScoreSetter";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
-import { postChallenge } from "@/services/api/index";
 import { useChallengeStore } from "@/store/challengeStore";
 import { typeActivity } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-
+import { isConnected } from "@/utility/Netinfo";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
+  Alert,
   Dimensions,
   Image,
   StyleSheet,
@@ -63,31 +64,61 @@ export default function ActivityOptions({
     addPagePoints(score);
   };
 
-  const handleSubmit = async () => {
-    if (selectedOption === null) return;
+const handleSubmit = async () => {
+  if (selectedOption === null) return;
 
-    const isCorrect = shuffledOptions[selectedOption].index === 0; // choice_1 is correct
-    const earnedPoints = isCorrect ? score : 0;
+  const isCorrect = shuffledOptions[selectedOption].index === 0; // choice_1 is correct
+  const earnedPoints = isCorrect ? score : 0;
 
-    const payLoad = {
-      activity: activity.id,
-      latitude: activity.location_lat,
-      longitude: activity.location_lng,
-      answer: String(selectedOption + 1),
-      ...(activity.on_app ? { driver_score: earnedPoints } : {}),
-    };
-
-    if (isCorrect) {
-      addPagePoints(score);
-    }
-
-    try {
-      await postChallenge(payLoad);
-      onNext();
-    } catch (error) {
-      console.error("Error creating challenge:", error);
-    }
+  const payload = {
+    activity: activity.id,
+    latitude: activity.location_lat,
+    longitude: activity.location_lng,
+    answer: String(selectedOption + 1),
+    driver_score: activity.on_app ? earnedPoints : null,
+    type: "question", // optional to help identify in sync logic
   };
+
+  if (isCorrect) {
+    addPagePoints(score);
+  }
+
+  const net = await isConnected();
+  const token = await AsyncStorage.getItem("AUTH_TOKEN");
+
+  if (!net) {
+    try {
+      const rawQueue = await AsyncStorage.getItem("offline_submissions1");
+      const offlineQueue = rawQueue ? JSON.parse(rawQueue) : {};
+      const uniqueId = `${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      offlineQueue[uniqueId] = payload;
+      await AsyncStorage.setItem("offline_submissions1", JSON.stringify(offlineQueue));
+      Alert.alert("Offline", "Your answer was saved and will be submitted later.");
+      onNext();
+    } catch (err) {
+      console.error("❌ Failed to save offline answer:", err);
+      Alert.alert("Error", "Could not save your answer offline.");
+    }
+    return;
+  }
+
+  // Online Submission
+  try {
+    await fetch("https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `token ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    onNext();
+  } catch (error) {
+    console.error("Error creating challenge:", error);
+    Alert.alert("Submission Failed", "Please try again.");
+  }
+};
 
   return (
     <View style={styles.container}>

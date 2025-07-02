@@ -234,7 +234,7 @@ const PasswordModal = ({ visible, onClose, onSuccess }) => {
               />
 
               <View style={styles.buttonContainer}>
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={[
                     styles.cancelButton,
                     isLoading && styles.disabledButton,
@@ -250,7 +250,7 @@ const PasswordModal = ({ visible, onClose, onSuccess }) => {
                   >
                     Cancel
                   </Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
                 <ThemedButton
                   onPress={handleContinue}

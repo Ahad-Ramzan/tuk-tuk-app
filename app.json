@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
+        "NSCameraUsageDescription": "This app needs access to your camera to take photos for activities."
       }
     },
     "android": {
@@ -27,7 +27,9 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_EXTERNAL_STORAGE"
       ],
       "package": "com.tuktuk.app"
     },
@@ -40,9 +42,9 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
-          "recordAudioAndroid": true
+          "cameraPermission": "This app needs access to your camera to take photos for activities.",
+          "microphonePermission": "This app needs access to your microphone for video recording.",
+          "recordAudioAndroid": false
         }
       ],
       [

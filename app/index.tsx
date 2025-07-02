@@ -50,6 +50,7 @@ export default function SlideshowScreen() {
     checkConnectionAndSync();
   }, [router]);
 
+
   const fetchChallenges = async (pageUrl?: string) => {
     const token = await AsyncStorage.getItem("user_token");
     const online = await isConnected();

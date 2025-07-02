@@ -65,6 +65,7 @@ export default function ImagePage() {
   const [retryKey, setRetryKey] = useState(0);
 
   const activity: typeActivity | undefined = activeTask?.[currentIndex];
+  console.log("Current Activity:", activity);
 
   const handleNext = useCallback(() => {
     if (activeTask && currentIndex < activeTask.length - 1) {

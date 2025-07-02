@@ -6,6 +6,9 @@ import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
 import { typeActivity } from "@/types";
 import { useChallengeStore } from "@/store/challengeStore";
+import { isConnected } from "@/utility/Netinfo";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { postChallenge } from "@/services/api";
 export default function ActivityPage({
   activity,
   onNext,
@@ -13,27 +16,28 @@ export default function ActivityPage({
   activity: typeActivity;
   onNext: () => void;
 }) {
-  const { addPagePoints, points, ThemedLogo } = useChallengeStore();
-  const [isActivityCompleted, setIsActivityCompleted] = useState(false);
-  const [scoreSelected, setScoreSelected] = useState(false);
-  const { company } = useTheme();
-  const Score = activity.on_app ? points : activity.score;
-
+  
   type TpayLoad = {
     activity: number;
     latitude: number;
     longitude: number;
     driver_score?: number;
   };
-  const payLoad: TpayLoad = {
-    activity: activity.id,
-    latitude: activity.location_lat,
-    longitude: activity.location_lng,
-  };
+  const { addPagePoints, points, ThemedLogo } = useChallengeStore();
+  const [isActivityCompleted, setIsActivityCompleted] = useState(false);
+  const [scoreSelected, setScoreSelected] = useState(false);
+  const { company } = useTheme();
+  // const Score = activity.on_app ? points : activity.score;
 
-  if (activity.on_app) {
-    payLoad.driver_score = points;
-  }
+  // const payLoad: TpayLoad = {
+  //   activity: activity.id,
+  //   latitude: activity.location_lat,
+  //   longitude: activity.location_lng,
+  // };
+
+  // if (activity.on_app) {
+  //   payLoad.driver_score = points;
+  // }
   const handleActivityCompleted = () => {
     setIsActivityCompleted(true);
   };
@@ -42,10 +46,40 @@ export default function ActivityPage({
     setIsActivityCompleted(false);
     setScoreSelected(true);
   };
-  const handleSubmit = () => {
-    addPagePoints(Score);
-    onNext();
+  const handleSubmit = async () => {
+  const Score = activity.on_app ? points : activity.score;
+  const payLoad: TpayLoad = {
+    activity: activity.id,
+    latitude: activity.location_lat,
+    longitude: activity.location_lng,
+    ...(activity.on_app ? { driver_score: points } : {}),
   };
+
+  const online = await isConnected();
+
+  if (!online) {
+    try {
+      const rawQueue = await AsyncStorage.getItem("offline_submissions1");
+      const offlineQueue = rawQueue ? JSON.parse(rawQueue) : {};
+      const uniqueId = Date.now().toString();
+      offlineQueue[uniqueId] = payLoad;
+      await AsyncStorage.setItem(
+        "offline_submissions1",
+        JSON.stringify(offlineQueue)
+      );
+      console.log("✅ Saved submission offline.");
+    } catch (e) {
+      console.error("❌ Failed to save offline submission:", e);
+    }
+  } else {
+    // Online case – either call `postChallenge(payLoad)` here or let your sync function handle it
+    await postChallenge(payLoad)
+    console.log("📡 Online - submit directly or queue");
+  }
+
+  addPagePoints(Score);
+  onNext();
+};
 
   return (
     <View style={styles.container}>

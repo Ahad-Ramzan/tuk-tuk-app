@@ -1,7 +1,7 @@
 //DrawingCanvas
 //expo install react-native-svg
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   Dimensions,
@@ -69,6 +69,11 @@ export default function DrawingBoard({ activity, onNext }) {
     return () => subscription?.remove();
   }, []);
 
+  const handleCloseModal = () => {
+    setIsActivityCompleted(false);
+    setScoreSelected(true);
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
@@ -77,7 +82,9 @@ export default function DrawingBoard({ activity, onNext }) {
         return;
       }
 
-      const fileUrl = FileSystem.documentDirectory + "drawing.svg";
+      const timestamp = Date.now();
+      const fileUrl = FileSystem.documentDirectory + `drawing_${timestamp}.svg`;
+
       const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${
         dimensions.window.width * 0.9
       }" height="${dimensions.window.height * 0.65}">${paths
@@ -89,7 +96,7 @@ export default function DrawingBoard({ activity, onNext }) {
 
       await FileSystem.writeAsStringAsync(fileUrl, svgContent);
 
-      const fileName = fileUrl.split("/").pop();
+     const fileName = `drawing_${timestamp}.svg`;
       const fileType = fileName.split(".").pop();
 
       const formPayload = {
@@ -268,7 +275,7 @@ export default function DrawingBoard({ activity, onNext }) {
         )}
         <ScoreSetter
           isVisible={isActivityCompleted}
-          onClose={() => setIsActivityCompleted(false)}
+          onClose={handleCloseModal}
         />
       </View>
     </View>

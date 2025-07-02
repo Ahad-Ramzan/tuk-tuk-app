@@ -6,6 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import React, { useRef, useState, useEffect } from "react";
+import { isConnected } from "@/utility/Netinfo";
+import * as FileSystem from "expo-file-system";
 import {
   Image,
   StyleSheet,
@@ -15,6 +17,7 @@ import {
   Dimensions,
   Alert,
   Linking,
+  Platform,
 } from "react-native";
 
 export default function PhotoPage({ activity, onNext }) {
@@ -26,6 +29,7 @@ export default function PhotoPage({ activity, onNext }) {
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [scoreSelected, setScoreSelected] = useState(false);
   const [screenData, setScreenData] = useState(Dimensions.get('window'));
+  const [permissionRequesting, setPermissionRequesting] = useState(false);
   const cameraRef = useRef(null);
   const { company } = useTheme();
   const Score = activity.on_app ? points : activity.score;
@@ -39,36 +43,112 @@ export default function PhotoPage({ activity, onNext }) {
     return () => subscription?.remove();
   }, []);
 
-  if (!permission) {
-    return null;
-  }
-
   // Enhanced permission request handler
   const handlePermissionRequest = async () => {
+    if (permissionRequesting) return; // Prevent multiple requests
+    
+    setPermissionRequesting(true);
+    
     try {
+      console.log('Requesting camera permission...');
       const result = await requestPermission();
-      if (!result.granted) {
-        // Show alert for manual settings navigation
-        Alert.alert(
-          "Camera Permission Required",
-          "Camera access is needed to take photos. Please enable camera permission in your device settings.",
-          [
-            { text: "Cancel", style: "cancel" },
-            { 
-              text: "Open Settings", 
-              onPress: () => {
-                // For React Native, you might need to use Linking or expo-linking
-                Linking.openSettings(); // Uncomment if you have linking imported
+      
+      console.log('Permission result:', result);
+      
+      if (result.granted) {
+        console.log('Camera permission granted');
+        // Permission granted, component will re-render
+      } else {
+        console.log('Camera permission denied');
+        
+        // Show different alerts based on platform and permission status
+        if (result.canAskAgain === false) {
+          // User has permanently denied permission
+          Alert.alert(
+            "Camera Permission Required",
+            "Camera access has been permanently denied. Please enable it manually in your device settings to continue.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Open Settings", 
+                onPress: async () => {
+                  try {
+                    if (Platform.OS === 'android') {
+                      await Linking.openSettings();
+                    } else {
+                      await Linking.openURL('app-settings:');
+                    }
+                  } catch (error) {
+                    console.error('Failed to open settings:', error);
+                    Alert.alert("Error", "Could not open settings. Please manually enable camera permission in your device settings.");
+                  }
+                }
               }
-            }
-          ]
-        );
+            ]
+          );
+        } else {
+          // User denied but can ask again
+          Alert.alert(
+            "Camera Permission Required",
+            "This app needs camera access to take photos. Please grant permission to continue.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Try Again", 
+                onPress: () => {
+                  setTimeout(() => {
+                    setPermissionRequesting(false);
+                    handlePermissionRequest();
+                  }, 500);
+                }
+              }
+            ]
+          );
+        }
       }
     } catch (error) {
       console.error('Permission request error:', error);
-      Alert.alert("Error", "Failed to request camera permission. Please try again.");
+      Alert.alert(
+        "Permission Error", 
+        "Failed to request camera permission. Please try again or check your device settings.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Try Again", 
+            onPress: () => {
+              setTimeout(() => {
+                setPermissionRequesting(false);
+                handlePermissionRequest();
+              }, 500);
+            }
+          }
+        ]
+      );
+    } finally {
+      setPermissionRequesting(false);
     }
   };
+
+  // Check permission status on component mount
+  useEffect(() => {
+    if (permission === null) {
+      console.log('Permission is null, requesting...');
+      // Small delay to ensure component is fully mounted
+      setTimeout(() => {
+        handlePermissionRequest();
+      }, 100);
+    }
+  }, []);
+
+  if (!permission) {
+    return (
+      <View style={cameraPermissionStyles.cameraPermissionContainer}>
+        <Text style={cameraPermissionStyles.cameraPermissionTitle}>
+          Loading Camera...
+        </Text>
+      </View>
+    );
+  }
 
   if (!permission.granted) {
     return (
@@ -83,18 +163,43 @@ export default function PhotoPage({ activity, onNext }) {
           Camera Access Needed
         </Text>
         <Text style={cameraPermissionStyles.cameraPermissionMessage}>
-          To continue, we need access to your device&apos;s camera. Please grant
-          permission.
+          To continue, we need access to your device&apos;s camera to take photos for activities.
         </Text>
         <TouchableOpacity
           onPress={handlePermissionRequest}
-          style={cameraPermissionStyles.cameraPermissionButton}
+          style={[
+            cameraPermissionStyles.cameraPermissionButton,
+            permissionRequesting && cameraPermissionStyles.cameraPermissionButtonDisabled
+          ]}
           activeOpacity={0.7}
+          disabled={permissionRequesting}
         >
           <Text style={cameraPermissionStyles.cameraPermissionButtonText}>
-            Grant Permission
+            {permissionRequesting ? "Requesting..." : "Grant Camera Permission"}
           </Text>
         </TouchableOpacity>
+        
+        {permission?.canAskAgain === false && (
+          <TouchableOpacity
+            onPress={async () => {
+              try {
+                if (Platform.OS === 'android') {
+                  await Linking.openSettings();
+                } else {
+                  await Linking.openURL('app-settings:');
+                }
+              } catch (error) {
+                console.error('Failed to open settings:', error);
+              }
+            }}
+            style={[cameraPermissionStyles.cameraPermissionButton, { marginTop: 10, backgroundColor: '#FF6B6B' }]}
+            activeOpacity={0.7}
+          >
+            <Text style={cameraPermissionStyles.cameraPermissionButtonText}>
+              Open Settings
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
@@ -121,59 +226,85 @@ export default function PhotoPage({ activity, onNext }) {
     setIsCameraOpen(true);
   };
 
-  const payLoad = {
-    activity: activity.id,
-    latitude: activity.location_lat,
-    longitude: activity.location_lng,
-    file: photo,
-  };
-
-  if (activity.on_app) {
-    payLoad.driver_score = points;
-  }
-
   const handleSubmit = async () => {
     if (!photo) return;
+
     setSubmitted(true);
-    const fileUri = photo;
-    const fileName = fileUri.split("/").pop();
-    const fileType = fileName.split(".").pop();
 
-    const formData = new FormData();
-
-    formData.append("activity", activity.id);
-    formData.append("latitude", activity.location_lat);
-    formData.append("longitude", activity.location_lng);
-    formData.append("file", {
-      uri: fileUri,
-      name: fileName,
-      type: `image/${fileType}`,
-    });
-    if (activity.on_app) {
-      formData.append("driver_score", points);
-    }
-    const token = await AsyncStorage.getItem("AUTH_TOKEN");
     try {
-      await fetch(
-        "https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/",
-        {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "multipart/form-data",
-            Authorization: `token ${token}`,
-            "X-CSRFTOKEN":
-              "UWHYzLJQNZC5K3SdzWixpRZNpZtzPxY6CO2OUCcr3wkxdGMW1TcCpmPv5X5hAg3A",
-          },
-          body: formData,
-        }
-      );
+      const fileInfo = await FileSystem.getInfoAsync(photo);
+      if (!fileInfo.exists) {
+        Alert.alert("Error", "Photo file not found.");
+        setSubmitted(false);
+        return;
+      }
+
+      const timestamp = Date.now();
+      const extension = photo.split(".").pop();
+      const fileName = `photo_${timestamp}.${extension}`;
+      const fileUri = FileSystem.documentDirectory + fileName;
+
+      await FileSystem.copyAsync({
+        from: photo,
+        to: fileUri,
+      });
+
+      const payload = {
+        activity: activity.id,
+        latitude: activity.location_lat,
+        longitude: activity.location_lng,
+        fileUri,
+        fileName,
+        fileType: extension,
+        driver_score: activity.on_app ? points : null,
+      };
+
+      const token = await AsyncStorage.getItem("AUTH_TOKEN");
+      const online = await isConnected();
+
+      if (!online) {
+        const rawQueue = await AsyncStorage.getItem("offline_submissions1");
+        const offlineQueue = rawQueue ? JSON.parse(rawQueue) : {};
+        const uniqueId = Date.now().toString();
+        offlineQueue[uniqueId] = payload;
+        await AsyncStorage.setItem("offline_submissions1", JSON.stringify(offlineQueue));
+        Alert.alert("Offline", "Submission saved.");
+        addPagePoints(Score);
+        onNext();
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("activity", activity.id);
+      formData.append("latitude", activity.location_lat);
+      formData.append("longitude", activity.location_lng);
+      formData.append("file", {
+        uri: fileUri,
+        name: fileName,
+        type: `image/${extension}`,
+      });
+      if (activity.on_app) {
+        formData.append("driver_score", points);
+      }
+
+      await fetch("https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "multipart/form-data",
+          Authorization: `token ${token}`,
+        },
+        body: formData,
+      });
+
+      addPagePoints(Score);
       onNext();
-    } catch (error) {
-      console.error("❌ Upload failed:", error.response?.data || error.message);
+    } catch (err) {
+      console.error("❌ Submission Error:", err);
+      Alert.alert("Error", "Something went wrong.");
+    } finally {
       setSubmitted(false);
     }
-    addPagePoints(Score);
   };
 
   const handleCloseModal = () => {
@@ -460,6 +591,9 @@ const cameraPermissionStyles = StyleSheet.create({
     },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+  },
+  cameraPermissionButtonDisabled: {
+    backgroundColor: "#cccccc",
   },
   cameraPermissionButtonText: {
     color: "#fff",
