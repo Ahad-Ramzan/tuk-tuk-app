@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useContext, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -26,9 +26,11 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const inputRefs = useRef<TextInput[]>([]);
 
-  if (isAuthenticated) {
-    router.push("/");
-  }
+ useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/");
+    }
+  }, [isAuthenticated, router]);
 
   const handleChange = (index: number, value: string) => {
     if (/^\d?$/.test(value)) {

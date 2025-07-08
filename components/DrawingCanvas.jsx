@@ -249,7 +249,7 @@ export default function DrawingBoard({ activity, onNext }) {
       </View>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.restartBtn} onPress={resetCanvas}>
+        <TouchableOpacity style={styles.restartBtn} onPress={resetCanvas} disabled={isSubmitting}>
           <Text>Restart</Text>
         </TouchableOpacity>
 

@@ -34,7 +34,7 @@ export default function PhotoPage({ activity, onNext }) {
   const { company } = useTheme();
   const Score = activity.on_app ? points : activity.score;
 
-  // Handle screen dimension changes for rotation
+  
   useEffect(() => {
     const subscription = Dimensions.addEventListener('change', ({ window }) => {
       setScreenData(window);
@@ -43,97 +43,90 @@ export default function PhotoPage({ activity, onNext }) {
     return () => subscription?.remove();
   }, []);
 
-  // Enhanced permission request handler
-  const handlePermissionRequest = async () => {
-    if (permissionRequesting) return; // Prevent multiple requests
-    
-    setPermissionRequesting(true);
-    
-    try {
-      console.log('Requesting camera permission...');
-      const result = await requestPermission();
-      
-      console.log('Permission result:', result);
-      
-      if (result.granted) {
-        console.log('Camera permission granted');
-        // Permission granted, component will re-render
-      } else {
-        console.log('Camera permission denied');
-        
-        // Show different alerts based on platform and permission status
-        if (result.canAskAgain === false) {
-          // User has permanently denied permission
-          Alert.alert(
-            "Camera Permission Required",
-            "Camera access has been permanently denied. Please enable it manually in your device settings to continue.",
-            [
-              { text: "Cancel", style: "cancel" },
-              { 
-                text: "Open Settings", 
-                onPress: async () => {
-                  try {
-                    if (Platform.OS === 'android') {
-                      await Linking.openSettings();
-                    } else {
-                      await Linking.openURL('app-settings:');
-                    }
-                  } catch (error) {
-                    console.error('Failed to open settings:', error);
-                    Alert.alert("Error", "Could not open settings. Please manually enable camera permission in your device settings.");
-                  }
-                }
-              }
-            ]
-          );
-        } else {
-          // User denied but can ask again
-          Alert.alert(
-            "Camera Permission Required",
-            "This app needs camera access to take photos. Please grant permission to continue.",
-            [
-              { text: "Cancel", style: "cancel" },
-              { 
-                text: "Try Again", 
-                onPress: () => {
-                  setTimeout(() => {
-                    setPermissionRequesting(false);
-                    handlePermissionRequest();
-                  }, 500);
-                }
-              }
-            ]
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Permission request error:', error);
-      Alert.alert(
-        "Permission Error", 
-        "Failed to request camera permission. Please try again or check your device settings.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { 
-            text: "Try Again", 
-            onPress: () => {
-              setTimeout(() => {
-                setPermissionRequesting(false);
-                handlePermissionRequest();
-              }, 500);
-            }
-          }
-        ]
-      );
-    } finally {
-      setPermissionRequesting(false);
-    }
-  };
+  
+const handlePermissionRequest = async () => {
+  if (permissionRequesting) return;
 
-  // Check permission status on component mount
+  setPermissionRequesting(true);
+
+  try {
+    const result = await requestPermission();
+
+    if (result.granted) {
+      // Nothing to do, permission granted
+    } else {
+      if (result.canAskAgain === false) {
+        Alert.alert(
+          "Camera Permission Required",
+          "Camera access has been permanently denied. Please enable it manually in your device settings to continue.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: async () => {
+                try {
+                  if (Platform.OS === 'android') {
+                    await Linking.openSettings();
+                  } else {
+                    await Linking.openURL('app-settings:');
+                  }
+                } catch  {
+                  Alert.alert(
+                    "Error",
+                    "Could not open settings. Please manually enable camera permission in your device settings."
+                  );
+                }
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Camera Permission Required",
+          "This app needs camera access to take photos. Please grant permission to continue.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Try Again",
+              onPress: () => {
+                setTimeout(() => {
+                  setPermissionRequesting(false);
+                  handlePermissionRequest();
+                }, 500);
+              }
+            }
+          ]
+        );
+      }
+    }
+  } catch  {
+    Alert.alert(
+      "Permission Error",
+      "Failed to request camera permission. Please try again or check your device settings.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Try Again",
+          onPress: () => {
+            setTimeout(() => {
+              setPermissionRequesting(false);
+              handlePermissionRequest();
+            }, 500);
+          }
+        }
+      ]
+    );
+  } finally {
+    setPermissionRequesting(false);
+  }
+};
+
+
+
+  
   useEffect(() => {
     if (permission === null) {
-      console.log('Permission is null, requesting...');
-      // Small delay to ensure component is fully mounted
+      
       setTimeout(() => {
         handlePermissionRequest();
       }, 100);
@@ -367,6 +360,7 @@ export default function PhotoPage({ activity, onNext }) {
               style={styles.outlineBtn} 
               onPress={retakePhoto}
               activeOpacity={0.7}
+              disabled={submitted}
             >
               <Text style={styles.outlineText}>Retake</Text>
             </TouchableOpacity>

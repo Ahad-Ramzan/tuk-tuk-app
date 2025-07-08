@@ -4,69 +4,60 @@ import PasswordModal from "@/components/PasswordModel";
 import { useTheme } from "@/context/ThemeContext";
 import { useChallengeStore } from "@/store/challengeStore";
 import { router } from "expo-router";
-import React, { useState } from "react"; // Add useState
+import React, { useState } from "react"; 
 import { Image, StyleSheet, Text, View } from "react-native";
-// import { postActiveChallenge } from "@/services/api";
+
 
 export default function PointsScreen() {
   const {
     resetAllPoints,
     grandTotalPoints,
-    // activeChallenge,
     resetCompletedTaskIds,
   } = useChallengeStore();
   const { company } = useTheme();
   const points = grandTotalPoints;
   
-  // Add state for password modal
+ 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  // console.log(activeChallenge, "activeChallenge");
-  
-  // This function will be called when exit button is pressed
+ 
   const handleExitPress = () => {
     setShowPasswordModal(true);
   };
 
-  // This function will be called when password is verified successfully
+ 
   const handlePasswordSuccess = () => {
-    // const payload = {
-    //   challenge_id: activeChallenge?.id,
-    //   is_active: false,
-    // };
-
-    // postActiveChallenge(payload);
+    
     resetAllPoints();
     resetCompletedTaskIds();
     router.push("/");
   };
 
-  // This function will be called when password modal is closed
-  const handlePasswordModalClose = () => {
+   const handlePasswordModalClose = () => {
     setShowPasswordModal(false);
   };
 
   return (
     <View style={styles.container}>
-      {/* Exit Button */}
+     
       <View style={styles.exitButton}>
         <ThemedButton title="Exit" onPress={handleExitPress} />
       </View>
 
-      {/* Company Logo */}
+     
       <Image source={company.fulllogo} style={styles.logo} />
 
-      {/* Points Display */}
+     
       <View style={styles.pointsContainer}>
         <Image source={star} style={[styles.star, styles.leftStar]} />
         <Text style={styles.pointsText}>{points} Points</Text>
         <Image source={star} style={[styles.star, styles.rightStar]} />
       </View>
 
-      {/* Congratulations Image */}
+      
       <Image source={welldone} style={styles.wellDoneImage} />
 
-      {/* QR Code Section */}
+     
       <View style={styles.qrSection}>
         <Image source={QRcode} style={styles.qrImage} />
         <View style={styles.qrTextContainer}>
@@ -77,7 +68,7 @@ export default function PointsScreen() {
         </View>
       </View>
 
-      {/* Password Modal */}
+     
       <PasswordModal
         visible={showPasswordModal}
         onClose={handlePasswordModalClose}

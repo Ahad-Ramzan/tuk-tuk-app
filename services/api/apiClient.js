@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { clearStorage } from "../storage/asyncStorage";
 export const BASEURL = process.env.EXPO_PUBLIC_API_URL;
-// Create Axios instance
+
 const createApiClient = () => {
   const apiClient = axios.create({
     baseURL: BASEURL,
@@ -12,13 +12,11 @@ const createApiClient = () => {
     },
   });
 
-  // Request Interceptor
   apiClient.interceptors.request.use(
     async (config) => {
       try {
-        // Retrieve and add token to headers
         const token = await AsyncStorage.getItem("AUTH_TOKEN");
-        // console.log("token gya AJAX ly k", token);
+
         if (token) {
           config.headers.Authorization = `token ${token}`;
         }
@@ -31,25 +29,22 @@ const createApiClient = () => {
     (error) => Promise.reject(error)
   );
 
-  // Response Interceptor
   apiClient.interceptors.response.use(
     (response) => response,
     async (error) => {
-      // Handle specific error scenarios
       if (error.response) {
         switch (error.response.status) {
-          case 401: // Unauthorized
-            // Token might be expired, clear storage and redirect to login
+          case 401:
             await clearStorage();
-            // Optionally trigger navigation to login screen
+
             break;
-          case 403: // Forbidden
+          case 403:
             console.error("Access Forbidden");
             break;
-          case 404: // Not Found
+          case 404:
             console.error("Resource Not Found");
             break;
-          case 500: // Server Error
+          case 500:
             console.error("Internal Server Error");
             break;
         }
@@ -61,6 +56,5 @@ const createApiClient = () => {
   return apiClient;
 };
 
-// Export configured API client
 const apiClient = createApiClient();
 export default apiClient;

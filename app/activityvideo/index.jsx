@@ -47,182 +47,176 @@ export default function VideoPage({ activity, onNext }) {
     player.muted = false;
   });
 
-  // Enhanced camera permission request handler
-  const handleCameraPermissionRequest = async () => {
-    if (cameraPermissionRequesting) return;
-    
-    setCameraPermissionRequesting(true);
-    
-    try {
-      console.log('Requesting camera permission...');
-      const result = await requestPermission();
-      
-      console.log('Camera permission result:', result);
-      
-      if (result.granted) {
-        console.log('Camera permission granted');
-      } else {
-        console.log('Camera permission denied');
-        
-        if (result.canAskAgain === false) {
-          Alert.alert(
-            "Camera Permission Required",
-            "Camera access has been permanently denied. Please enable it manually in your device settings to continue.",
-            [
-              { text: "Cancel", style: "cancel" },
-              { 
-                text: "Open Settings", 
-                onPress: async () => {
-                  try {
-                    if (Platform.OS === 'android') {
-                      await Linking.openSettings();
-                    } else {
-                      await Linking.openURL('app-settings:');
-                    }
-                  } catch (error) {
-                    console.error('Failed to open settings:', error);
-                    Alert.alert("Error", "Could not open settings. Please manually enable camera permission in your device settings.");
-                  }
-                }
-              }
-            ]
-          );
-        } else {
-          Alert.alert(
-            "Camera Permission Required",
-            "This app needs camera access to record videos. Please grant permission to continue.",
-            [
-              { text: "Cancel", style: "cancel" },
-              { 
-                text: "Try Again", 
-                onPress: () => {
-                  setTimeout(() => {
-                    setCameraPermissionRequesting(false);
-                    handleCameraPermissionRequest();
-                  }, 500);
-                }
-              }
-            ]
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Camera permission request error:', error);
-      Alert.alert(
-        "Permission Error", 
-        "Failed to request camera permission. Please try again or check your device settings.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { 
-            text: "Try Again", 
-            onPress: () => {
-              setTimeout(() => {
-                setCameraPermissionRequesting(false);
-                handleCameraPermissionRequest();
-              }, 500);
-            }
-          }
-        ]
-      );
-    } finally {
-      setCameraPermissionRequesting(false);
-    }
-  };
 
-  // Enhanced microphone permission request handler
-  const handleMicrophonePermissionRequest = async () => {
-    if (micPermissionRequesting) return;
-    
-    setMicPermissionRequesting(true);
-    
-    try {
-      console.log('Requesting microphone permission...');
-      const result = await requestMicrophonePermission();
-      
-      console.log('Microphone permission result:', result);
-      
-      if (result.granted) {
-        console.log('Microphone permission granted');
-      } else {
-        console.log('Microphone permission denied');
-        
-        if (result.canAskAgain === false) {
-          Alert.alert(
-            "Microphone Permission Required",
-            "Microphone access has been permanently denied. Please enable it manually in your device settings to continue.",
-            [
-              { text: "Cancel", style: "cancel" },
-              { 
-                text: "Open Settings", 
-                onPress: async () => {
-                  try {
-                    if (Platform.OS === 'android') {
-                      await Linking.openSettings();
-                    } else {
-                      await Linking.openURL('app-settings:');
-                    }
-                  } catch (error) {
-                    console.error('Failed to open settings:', error);
-                    Alert.alert("Error", "Could not open settings. Please manually enable microphone permission in your device settings.");
-                  }
-                }
-              }
-            ]
-          );
-        } else {
-          Alert.alert(
-            "Microphone Permission Required",
-            "This app needs microphone access to record audio with videos. Please grant permission to continue.",
-            [
-              { text: "Cancel", style: "cancel" },
-              { 
-                text: "Try Again", 
-                onPress: () => {
-                  setTimeout(() => {
-                    setMicPermissionRequesting(false);
-                    handleMicrophonePermissionRequest();
-                  }, 500);
-                }
-              }
-            ]
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Microphone permission request error:', error);
-      Alert.alert(
-        "Permission Error", 
-        "Failed to request microphone permission. Please try again or check your device settings.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { 
-            text: "Try Again", 
-            onPress: () => {
-              setTimeout(() => {
-                setMicPermissionRequesting(false);
-                handleMicrophonePermissionRequest();
-              }, 500);
-            }
-          }
-        ]
-      );
-    } finally {
-      setMicPermissionRequesting(false);
-    }
-  };
+const handleCameraPermissionRequest = async () => {
+  if (cameraPermissionRequesting) return;
 
-  // Check permissions on component mount
+  setCameraPermissionRequesting(true);
+
+  try {
+    const result = await requestPermission();
+
+    if (result.granted) {
+      // Permission granted, no further action needed
+    } else {
+      if (result.canAskAgain === false) {
+        Alert.alert(
+          "Camera Permission Required",
+          "Camera access has been permanently denied. Please enable it manually in your device settings to continue.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: async () => {
+                try {
+                  if (Platform.OS === 'android') {
+                    await Linking.openSettings();
+                  } else {
+                    await Linking.openURL('app-settings:');
+                  }
+                } catch {
+                  Alert.alert(
+                    "Error",
+                    "Could not open settings. Please manually enable camera permission in your device settings."
+                  );
+                }
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Camera Permission Required",
+          "This app needs camera access to record videos. Please grant permission to continue.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Try Again",
+              onPress: () => {
+                setTimeout(() => {
+                  setCameraPermissionRequesting(false);
+                  handleCameraPermissionRequest();
+                }, 500);
+              }
+            }
+          ]
+        );
+      }
+    }
+  } catch {
+    Alert.alert(
+      "Permission Error",
+      "Failed to request camera permission. Please try again or check your device settings.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Try Again",
+          onPress: () => {
+            setTimeout(() => {
+              setCameraPermissionRequesting(false);
+              handleCameraPermissionRequest();
+            }, 500);
+          }
+        }
+      ]
+    );
+  } finally {
+    setCameraPermissionRequesting(false);
+  }
+};
+
+
+ 
+const handleMicrophonePermissionRequest = async () => {
+  if (micPermissionRequesting) return;
+
+  setMicPermissionRequesting(true);
+
+  try {
+    const result = await requestMicrophonePermission();
+
+    if (result.granted) {
+      // Permission granted
+    } else {
+      if (result.canAskAgain === false) {
+        Alert.alert(
+          "Microphone Permission Required",
+          "Microphone access has been permanently denied. Please enable it manually in your device settings to continue.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: async () => {
+                try {
+                  if (Platform.OS === 'android') {
+                    await Linking.openSettings();
+                  } else {
+                    await Linking.openURL('app-settings:');
+                  }
+                } catch {
+                  Alert.alert(
+                    "Error",
+                    "Could not open settings. Please manually enable microphone permission in your device settings."
+                  );
+                }
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Microphone Permission Required",
+          "This app needs microphone access to record audio with videos. Please grant permission to continue.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Try Again",
+              onPress: () => {
+                setTimeout(() => {
+                  setMicPermissionRequesting(false);
+                  handleMicrophonePermissionRequest();
+                }, 500);
+              }
+            }
+          ]
+        );
+      }
+    }
+  } catch {
+    Alert.alert(
+      "Permission Error",
+      "Failed to request microphone permission. Please try again or check your device settings.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Try Again",
+          onPress: () => {
+            setTimeout(() => {
+              setMicPermissionRequesting(false);
+              handleMicrophonePermissionRequest();
+            }, 500);
+          }
+        }
+      ]
+    );
+  } finally {
+    setMicPermissionRequesting(false);
+  }
+};
+
+
+  
   useEffect(() => {
     const checkPermissions = async () => {
       if (permission === null) {
-        console.log('Camera permission is null, requesting...');
+        
         setTimeout(() => {
           handleCameraPermissionRequest();
         }, 100);
       }
       
       if (microphonePermission === null) {
-        console.log('Microphone permission is null, requesting...');
+        
         setTimeout(() => {
           handleMicrophonePermissionRequest();
         }, 200);
@@ -284,7 +278,7 @@ export default function VideoPage({ activity, onNext }) {
           </Text>
         </TouchableOpacity>
 
-        {/* Settings button for permanently denied permissions */}
+        
         {((needsCameraPermission && permission?.canAskAgain === false) || 
           (needsMicPermission && microphonePermission?.canAskAgain === false)) && (
           <TouchableOpacity
@@ -467,7 +461,8 @@ export default function VideoPage({ activity, onNext }) {
             nativeControls={false}
           />
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.outlineBtn} onPress={retakeVideo}>
+            <TouchableOpacity style={styles.outlineBtn} onPress={retakeVideo}
+            disabled={isSubmitting}>
               <Text style={styles.outlineText}>Retake</Text>
             </TouchableOpacity>
             {activity.on_app ? (

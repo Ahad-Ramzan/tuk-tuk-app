@@ -26,6 +26,8 @@ interface ChallengeState {
   ThemedLogo: string | null;
   ThemedColor: string | null;
   setBrandDetails: (image: string, color: string) => void;
+     disabled: boolean;
+  setDisabled: (status: boolean) => void;
 }
 
 export const useChallengeStore = create<ChallengeState>((set) => ({
@@ -73,4 +75,6 @@ export const useChallengeStore = create<ChallengeState>((set) => ({
   ThemedColor: null,
   setBrandDetails: (image, color) =>
     set({ ThemedLogo: image, ThemedColor: color }),
+  disabled: false,
+  setDisabled: (status) => set({ disabled: status }),
 }));

@@ -71,7 +71,10 @@ export default function TextQuiz({ activity, onNext }: Props) {
         const offlineQueue = rawQueue ? JSON.parse(rawQueue) : {};
         const id = Date.now().toString();
         offlineQueue[id] = payload;
-        await AsyncStorage.setItem("offline_submissions1", JSON.stringify(offlineQueue));
+        await AsyncStorage.setItem(
+          "offline_submissions1",
+          JSON.stringify(offlineQueue)
+        );
         addPagePoints(score);
         onNext();
         return;
@@ -91,7 +94,7 @@ export default function TextQuiz({ activity, onNext }: Props) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior="height" keyboardVerticalOffset={150}>
+    <KeyboardAvoidingView style={styles.container} behavior="height">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -113,7 +116,12 @@ export default function TextQuiz({ activity, onNext }: Props) {
             )}
           </View>
 
-          <View style={[styles.contentContainer, isLandscape && styles.landscapeContent]}>
+          <View
+            style={[
+              styles.contentContainer,
+              isLandscape && styles.landscapeContent,
+            ]}
+          >
             <View style={styles.card}>
               <Text style={styles.heading}>Answer the question</Text>
 
@@ -138,13 +146,19 @@ export default function TextQuiz({ activity, onNext }: Props) {
 
               <View style={styles.buttonContainer}>
                 {activity.on_app && !scoreSelected ? (
-                  <ThemedButton title="Assign Score" onPress={handleActivityCompleted} />
+                  <ThemedButton
+                    title="Assign Score"
+                    onPress={handleActivityCompleted}
+                  />
                 ) : (
                   <ThemedButton title="Submit" onPress={handleSubmit} />
                 )}
               </View>
 
-              <ScoreSetter isVisible={isActivityCompleted} onClose={handleCloseModal} />
+              <ScoreSetter
+                isVisible={isActivityCompleted}
+                onClose={handleCloseModal}
+              />
             </View>
           </View>
         </ScrollView>

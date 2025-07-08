@@ -3,7 +3,7 @@ import apiClient from "./apiClient";
 import {storeToken} from "../storage/asyncStorage";
 
 const AuthAPI = {
-  // Login Method
+
   login: async (email, password) => {
     try {
       const response = await apiClient.post("/user/token/", {
@@ -15,7 +15,7 @@ const AuthAPI = {
         storeToken(response?.data?.token);
         AsyncStorage.setItem("AUTH_TOKEN", response?.data?.token);
       } else {
-        console.log("token not set");
+        throw new Error("Login failed: No token received");
       }
       return response.data;
     } catch (error) {
@@ -24,7 +24,6 @@ const AuthAPI = {
     }
   },
 
-  // Logout Method
   logout: async () => {
   try {
     await AsyncStorage.removeItem("AUTH_TOKEN"); 

@@ -56,7 +56,14 @@ const UnknownActivityFallback = ({
 );
 
 export default function ImagePage() {
-  const { activeTask } = useChallengeStore();
+  const {
+    activeTask,
+    setDisabled,
+    disabled,
+    completeActivity,
+    completedTask,
+    selectedTask,
+  } = useChallengeStore();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [activityComponent, setActivityComponent] =
     useState<JSX.Element | null>(null);
@@ -65,13 +72,28 @@ export default function ImagePage() {
   const [retryKey, setRetryKey] = useState(0);
 
   const activity: typeActivity | undefined = activeTask?.[currentIndex];
-  console.log("Current Activity:", activity);
+
+  useEffect(() => {
+    const allCompleted = activeTask
+      ? activeTask.every((task) => task.status === "true")
+      : false;
+
+    setDisabled(allCompleted);
+  }, [activeTask]);
 
   const handleNext = useCallback(() => {
     if (activeTask && currentIndex < activeTask.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
-      router.push("/feedback");
+      if (disabled) {
+        if (selectedTask !== null) {
+          completedTask(selectedTask);
+        }
+        completeActivity();
+        router.push("/mapprogress");
+      } else {
+        router.push("/feedback");
+      }
     }
   }, [activeTask, currentIndex]);
 
@@ -90,7 +112,7 @@ export default function ImagePage() {
 
     const loadComponent = async () => {
       if (!activity) return;
-      console.log("Loading activity component for:", activity.task_type);
+
       setLoading(true);
       setActivityComponent(null);
       setComponentError(null);
@@ -123,7 +145,6 @@ export default function ImagePage() {
         if (isMounted) {
           if (Component) {
             setActivityComponent(
-
               <Component activity={activity} onNext={handleNext} />
             );
           } else {

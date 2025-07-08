@@ -1,7 +1,7 @@
 import ThemedButton from "@/components/ThemedButton";
 import { AuthContext } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getChallenges, postActiveChallenge } from "@/services/api";
+import { getChallenges } from "@/services/api";
 import { useChallengeStore } from "@/store/challengeStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -31,7 +31,7 @@ export default function SlideshowScreen() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  // const [totalCount, setTotalCount] = useState(0);
   const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
   const [prevPageUrl, setPrevPageUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -54,20 +54,20 @@ export default function SlideshowScreen() {
   const fetchChallenges = async (pageUrl?: string) => {
     const token = await AsyncStorage.getItem("user_token");
     const online = await isConnected();
-    console.log(online, "connection status index.jsx");
+ 
 
     if (online) {
       try {
         const data = await getChallenges(token || "", pageUrl);
         setChallenges(data?.results || []);
-        setTotalCount(data?.count || 0);
+        // setTotalCount(data?.count || 0);
         setNextPageUrl(data?.next || null);
         setPrevPageUrl(data?.previous || null);
 
         // Save to AsyncStorage
         await AsyncStorage.setItem("cached_challenges", JSON.stringify(data));
-      } catch (error) {
-        console.error("Failed to fetch online challenges:", error);
+      } catch  {
+       
       }
     } else {
       try {
@@ -75,12 +75,12 @@ export default function SlideshowScreen() {
         if (cached) {
           const data = JSON.parse(cached);
           setChallenges(data?.results || []);
-          setTotalCount(data?.count || 0);
+          // setTotalCount(data?.count || 0);
           setNextPageUrl(null); // Pagination offline is not supported
           setPrevPageUrl(null);
         }
-      } catch (err) {
-        console.log("No cached data available", err);
+      } catch {
+       
       }
     }
   };
@@ -131,14 +131,10 @@ export default function SlideshowScreen() {
       if (foundChallenge?.brand) {
         const { image, color_scheme } = foundChallenge?.brand;
         setBrandDetails(image, color_scheme);
-        // console.log("brand details saved to store:" ,{image,color_scheme})
+        
       }
     }
-    // const payload = {
-    //   challenge_id: challengeId,
-    //   is_active: true,
-    // };
-    // await postActiveChallenge(payload);
+   
 
     router.push({
       pathname: "/onboarding",
@@ -195,7 +191,7 @@ export default function SlideshowScreen() {
       </ScrollView>
 
       {/* Pagination Controls */}
-      {totalCount > 10 && (
+      {(nextPageUrl || prevPageUrl) && (
         <View style={styles.paginationContainer}>
           <TouchableOpacity
             onPress={handlePrev}

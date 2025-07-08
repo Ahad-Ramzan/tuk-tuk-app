@@ -16,10 +16,7 @@ export const syncOfflineSubmissions = async () => {
     for (const [id, item] of Object.entries(offlineQueue)) {
       try {
         let response;
-        console.log(`📤 Submitting activity [${id}]:`, item);
 
-
-        // Detect if it's a file-based submission
         if (item.fileUri && item.fileName && item.fileType) {
           const isVideo = item.fileType === "mp4" || item.fileType === "mov" || item.fileType === "avi";
           const isSvg = item.fileType === "svg";
@@ -48,12 +45,9 @@ export const syncOfflineSubmissions = async () => {
                 Authorization: `token ${token}`,
               },
               body: formData,
-            
-            },
-            
+            }
           );
         } else {
-          // It's a JSON (non-file) submission (e.g., question answer)
           response = await fetch(
             "https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/",
             {
@@ -70,20 +64,13 @@ export const syncOfflineSubmissions = async () => {
 
         if (response.ok) {
           delete updatedQueue[id];
-          console.log(`✅ Synced activity [${id}]`);
-        } else {
-          console.log(`❌ Server error syncing activity [${id}]`);
         }
-      } catch (error) {
-        console.log(`⚠️ Retry failed for activity [${id}]:`, error.message);
-      }
+      } catch {}
     }
 
     await AsyncStorage.setItem(
       "offline_submissions1",
       JSON.stringify(updatedQueue)
     );
-  } catch (error) {
-    console.error("Failed to sync offline submissions:", error.message);
-  }
+  } catch {}
 };
