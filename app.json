@@ -3,7 +3,7 @@
     "name": "Tuktuk",
     "slug": "my-app",
     "version": "1.0.1",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icons/appstore.png",
     "scheme": "tuktuk",
     "userInterfaceStyle": "automatic",
@@ -11,12 +11,12 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
+        "NSCameraUsageDescription": "This app needs access to your camera to take photos for activities."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/icons/appstore.png",
         "backgroundColor": "#ffffff"
       },
       "config": {
@@ -27,7 +27,9 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_EXTERNAL_STORAGE"
       ],
       "package": "com.tuktuk.app"
     },
@@ -40,9 +42,9 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
-          "recordAudioAndroid": true
+          "cameraPermission": "This app needs access to your camera to take photos for activities.",
+          "microphonePermission": "This app needs access to your microphone for video recording.",
+          "recordAudioAndroid": false
         }
       ],
       [
@@ -56,7 +58,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/icons/appstore.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -69,7 +71,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "d0c1a8f4-98d8-4817-bd71-e180321e0527"
+        "projectId": "91e079f9-2147-4f58-b8e5-46af92c46f1b"
       }
     }
   }

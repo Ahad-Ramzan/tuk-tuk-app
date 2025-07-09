@@ -1,50 +1,63 @@
 import { QRcode, star, welldone } from "@/assets/images";
 import ThemedButton from "@/components/ThemedButton";
+import PasswordModal from "@/components/PasswordModel";
 import { useTheme } from "@/context/ThemeContext";
 import { useChallengeStore } from "@/store/challengeStore";
 import { router } from "expo-router";
-import React from "react";
+import React, { useState } from "react"; 
 import { Image, StyleSheet, Text, View } from "react-native";
-import { postActiveChallenge } from "@/services/api";
+
 
 export default function PointsScreen() {
-  const { resetAllPoints, grandTotalPoints,activeChallenge,resetCompletedTaskIds } = useChallengeStore();
+  const {
+    resetAllPoints,
+    grandTotalPoints,
+    resetCompletedTaskIds,
+  } = useChallengeStore();
   const { company } = useTheme();
   const points = grandTotalPoints;
-  // console.log(activeChallenge, "activeChallenge");
-  const handleExit = () => {
-    const payload = {
-      challenge_id: activeChallenge?.id ,
-      is_active: false,
-    }
+  
+ 
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+ 
+  const handleExitPress = () => {
+    setShowPasswordModal(true);
+  };
+
+ 
+  const handlePasswordSuccess = () => {
     
-     postActiveChallenge(payload);
     resetAllPoints();
     resetCompletedTaskIds();
     router.push("/");
   };
 
+   const handlePasswordModalClose = () => {
+    setShowPasswordModal(false);
+  };
+
   return (
     <View style={styles.container}>
-      {/* Exit Button */}
+     
       <View style={styles.exitButton}>
-        <ThemedButton title="Exit" onPress={handleExit} />
+        <ThemedButton title="Exit" onPress={handleExitPress} />
       </View>
 
-      {/* Company Logo */}
+     
       <Image source={company.fulllogo} style={styles.logo} />
 
-      {/* Points Display */}
+     
       <View style={styles.pointsContainer}>
         <Image source={star} style={[styles.star, styles.leftStar]} />
         <Text style={styles.pointsText}>{points} Points</Text>
         <Image source={star} style={[styles.star, styles.rightStar]} />
       </View>
 
-      {/* Congratulations Image */}
+      
       <Image source={welldone} style={styles.wellDoneImage} />
 
-      {/* QR Code Section */}
+     
       <View style={styles.qrSection}>
         <Image source={QRcode} style={styles.qrImage} />
         <View style={styles.qrTextContainer}>
@@ -54,6 +67,13 @@ export default function PointsScreen() {
           </Text>
         </View>
       </View>
+
+     
+      <PasswordModal
+        visible={showPasswordModal}
+        onClose={handlePasswordModalClose}
+        onSuccess={handlePasswordSuccess}
+      />
     </View>
   );
 }
@@ -73,8 +93,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   logo: {
-    width: 140,
-    height: 60,
+    width: 160,
+    height: 80,
     resizeMode: "contain",
     position: "absolute",
     top: 40,
@@ -108,7 +128,7 @@ const styles = StyleSheet.create({
     height: 280,
     resizeMode: "contain",
     marginVertical: 20,
-    marginTop: -40,
+    marginTop: -150,
   },
   qrSection: {
     flexDirection: "row",
@@ -116,7 +136,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
-    marginTop: 20,
+    marginTop: -60,
     width: "90%",
     maxWidth: 500,
     shadowColor: "#000",

@@ -1,13 +1,21 @@
 import DrawingBoard from "@/components/DrawingCanvas";
 import ThemedButton from "@/components/ThemedButton";
 import { useTheme } from "@/context/ThemeContext";
+import { useChallengeStore } from "@/store/challengeStore";
 import { typeActivity } from "@/types";
 import React, { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 
-export default function DrawingPage({ activity ,onNext}: { activity: typeActivity, onNext: () => void }) {
-  const [step, setStep] = useState(1);
+export default function DrawingPage({
+  activity,
+  onNext,
+}: {
+  activity: typeActivity;
+  onNext: () => void;
+}) {
+  const [step, setStep] = useState(true);
   const { company } = useTheme();
+  const { ThemedLogo } = useChallengeStore();
 
   return (
     <View style={styles.container}>
@@ -20,10 +28,14 @@ export default function DrawingPage({ activity ,onNext}: { activity: typeActivit
       <View style={styles.contentContainer}>
         {/* Logo */}
         <View style={styles.logoContainer}>
-          <Image source={company.fulllogo} style={styles.logo} />
+          {ThemedLogo ? (
+            <Image source={{ uri: ThemedLogo }} style={styles.logo1} />
+          ) : (
+            <Image source={company.fulllogo} style={styles.logo} />
+          )}
         </View>
 
-        {step === 1 && (
+        {step && (
           <View style={styles.card}>
             <Text style={styles.heading}>Time to draw! </Text>
             <Image
@@ -31,11 +43,14 @@ export default function DrawingPage({ activity ,onNext}: { activity: typeActivit
               style={styles.drawingImage}
             />
             <Text style={styles.subText}>{activity.prompt}</Text>
-            <ThemedButton title="Start drawing" onPress={() => setStep(2)} />
+            <ThemedButton
+              title="Start drawing"
+              onPress={() => setStep(false)}
+            />
           </View>
         )}
 
-        {step === 2 && <DrawingBoard activity={activity} onNext={onNext}/>}
+        {!step && <DrawingBoard activity={activity} onNext={onNext} />}
       </View>
     </View>
   );
@@ -75,6 +90,11 @@ const styles = StyleSheet.create({
     height: 60,
     resizeMode: "contain",
   },
+  logo1: {
+    width: 180,
+    height: 80,
+    resizeMode: "contain",
+  },
   card: {
     width: "100%",
     padding: 20,
@@ -89,8 +109,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   drawingImage: {
-    width: 550,
-    height: 400,
+    width: "100%",
+    height: "50%",
     resizeMode: "contain",
     marginBottom: 16,
   },

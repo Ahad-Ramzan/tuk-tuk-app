@@ -22,6 +22,12 @@ interface ChallengeState {
   selectedTask: number | null;
   setSelectedTask: (id: number | null) => void;
   resetCompletedTaskIds: () => void;
+
+  ThemedLogo: string | null;
+  ThemedColor: string | null;
+  setBrandDetails: (image: string, color: string) => void;
+     disabled: boolean;
+  setDisabled: (status: boolean) => void;
 }
 
 export const useChallengeStore = create<ChallengeState>((set) => ({
@@ -56,13 +62,19 @@ export const useChallengeStore = create<ChallengeState>((set) => ({
   points: 0,
   setPoints: (newScore) => set({ points: newScore }),
 
-   selectedTask: null,
+  selectedTask: null,
   setSelectedTask: (id) => set({ selectedTask: id }),
   completedTaskIds: [],
   completedTask: (id) =>
     set((state) => ({
       completedTaskIds: [...state.completedTaskIds, id],
     })),
-    resetCompletedTaskIds: () =>
-    set(() => ({ completedTaskIds: [] })),
+  resetCompletedTaskIds: () => set(() => ({ completedTaskIds: [] })),
+
+  ThemedLogo: null,
+  ThemedColor: null,
+  setBrandDetails: (image, color) =>
+    set({ ThemedLogo: image, ThemedColor: color }),
+  disabled: false,
+  setDisabled: (status) => set({ disabled: status }),
 }));

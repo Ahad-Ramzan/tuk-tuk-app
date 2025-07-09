@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import PasswordModal from "@/components/PasswordModel";
 
 import ErrorModal from "@/components/ErrorModal";
 import ThemedButton from "@/components/ThemedButton";
 import { useChallengeStore } from "@/store/challengeStore";
 import { router } from "expo-router";
 
-const ActivityPrompt = ({ onClose, ID,onComplete }) => {
+const ActivityPrompt = ({ onClose, ID }) => {
   const [showError, setShowError] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const { activeChallenge, setActiveTask } = useChallengeStore();
   useEffect(() => {
     if (activeChallenge) {
@@ -22,11 +24,27 @@ const ActivityPrompt = ({ onClose, ID,onComplete }) => {
     }
   }, [activeChallenge, ID, setActiveTask]);
 
+  const handleClose = () => {
+    // stopBellSound();
+    onClose();
+  };
+
+  const handleStartActivity = () => {
+    // stopBellSound();
+    setShowPasswordModal(true);
+  };
+
+
+  const handlePasswordSuccess = () => {
+    setShowPasswordModal(false);
+    router.push("/taskmanager");
+  };
+
   return (
     <View style={styles.overlay}>
       <View style={styles.modal}>
         {/* Close Button */}
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
           <Text style={styles.closeText}>×</Text>
         </TouchableOpacity>
 
@@ -45,11 +63,17 @@ const ActivityPrompt = ({ onClose, ID,onComplete }) => {
         <ThemedButton
           variant="primary"
           style={styles.startButton}
-          onPress={() => router.push("/taskmanager")}
+          onPress={handleStartActivity}
           title="Start activity"
-          
         />
       </View>
+       {showPasswordModal && (
+        <PasswordModal
+          visible={showPasswordModal}
+          onClose={() => setShowPasswordModal(false)}
+          onSuccess={handlePasswordSuccess}
+        />
+      )}
 
       {/* Show ErrorModal if showError is true */}
       {showError && (
@@ -103,7 +127,6 @@ const styles = StyleSheet.create({
     height: 280,
   },
   startButton: {
-    backgroundColor: "#003366", // Adjust based on your theme
     padding: 12,
     borderRadius: 8,
     alignItems: "center",

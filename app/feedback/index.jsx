@@ -1,7 +1,7 @@
 import { Text, View, Image, StyleSheet } from "react-native";
 import ActivityLayout from "@/components/ActivityLayout";
 import ThemedButton from "@/components/ThemedButton";
-import { useTheme } from "@/context/ThemeContext";
+// import { useTheme } from "@/context/ThemeContext";
 import { router } from "expo-router";
 import zeroStar from "@/assets/images/zerostar.png";
 import oneStar from "@/assets/images/onestar.png";
@@ -18,8 +18,8 @@ const FEEDBACK_DATA = [
 ];
 
 const CurvedText = ({ text = "" }) => {
- 
-  const { company } = useTheme();
+  // const { ThemedColor } = useChallengeStore();
+  // const { company } = useTheme();
   const radius = 320;
   const centerX = 200;
   const centerY = 150;
@@ -44,7 +44,7 @@ const CurvedText = ({ text = "" }) => {
                 left: x,
                 top: y,
                 transform: [{ rotate: `${angleDeg + 90}deg` }],
-                color: company.theme?.primary || "#0A3D62",
+                color: "#0A3D62",
               },
             ]}
           >
@@ -58,7 +58,7 @@ const CurvedText = ({ text = "" }) => {
 
 // Main FeedbackScreen
 const FeedbackScreen = () => {
-  const { completeActivity,completedTask,selectedTask } = useChallengeStore();
+  const { completeActivity, completedTask, selectedTask } = useChallengeStore();
   const { currentActivityPoints, grandTotalPoints } = useChallengeStore();
 
   const getFeedback = () => {
@@ -67,10 +67,10 @@ const FeedbackScreen = () => {
     );
   };
   const handleSubmit = () => {
-    completedTask(selectedTask)
-    completeActivity()
-    router.push("/mapprogress")
-  }
+    completedTask(selectedTask);
+    completeActivity();
+    router.push("/mapprogress");
+  };
 
   const { image, message } = getFeedback();
 
@@ -79,9 +79,12 @@ const FeedbackScreen = () => {
       <View style={styles.container}>
         <CurvedText text={message} />
         <Image source={image} style={styles.starImage} resizeMode="contain" />
-        <Text style={styles.pointsText}>You won {currentActivityPoints} points</Text>
+        <Text style={styles.pointsText}>
+          You won {currentActivityPoints} points
+        </Text>
         <Text style={styles.totalText}>
-          Your total score is now {grandTotalPoints+currentActivityPoints} points
+          Your total score is now {grandTotalPoints + currentActivityPoints}{" "}
+          points
         </Text>
       </View>
       <ThemedButton
@@ -95,8 +98,6 @@ const FeedbackScreen = () => {
 
 export default FeedbackScreen;
 
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -104,10 +105,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     zIndex: 12,
+    marginBottom: -60,
   },
   starImage: {
     width: 520,
-    height: 250,
+    height: 200,
     marginVertical: 20,
     marginTop: -140,
   },
@@ -125,13 +127,14 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     position: "absolute",
-    bottom: 40,
+    bottom: 60,
     right: 20,
     zIndex: 20,
   },
   curvedTextContainer: {
     width: 400,
     height: 100,
+    marginTop: 140,
     position: "relative",
     justifyContent: "center",
     alignItems: "center",

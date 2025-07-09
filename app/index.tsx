@@ -1,19 +1,39 @@
 import ThemedButton from "@/components/ThemedButton";
 import { AuthContext } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getChallenges, postActiveChallenge } from "@/services/api";
+import { getChallenges } from "@/services/api";
 import { useChallengeStore } from "@/store/challengeStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useContext, useEffect } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { isConnected } from "@/utility/Netinfo";
+import React, { useContext, useEffect, useState } from "react";
+import { syncOfflineSubmissions } from "@/utility/syncOffline";
+
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
 import "../ReactotronConfig";
+import useAuth from "@/hooks/useAuth";
 
 export default function SlideshowScreen() {
   const router = useRouter();
   const { company } = useTheme();
-  const { challenges, setChallenges } = useChallengeStore();
+  const { challenges, setChallenges, setBrandDetails } = useChallengeStore();
+  const [refreshing, setRefreshing] = useState(false);
   const { isAuthenticated } = useContext(AuthContext);
+  const { logout } = useAuth();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  // const [totalCount, setTotalCount] = useState(0);
+  const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
+  const [prevPageUrl, setPrevPageUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace("/login");
@@ -21,26 +41,100 @@ export default function SlideshowScreen() {
   }, [isAuthenticated, router]);
 
   useEffect(() => {
-    const fetchChallenges = async () => {
-      try {
-        const token = await AsyncStorage.getItem("user_token");
-        const data = await getChallenges(token || "");
-        setChallenges(data?.results || []);
-      } catch (error) {
-        console.error("Failed to fetch challenges:", error);
+    const checkConnectionAndSync = async () => {
+      const Net = await isConnected();
+      if (Net) {
+        syncOfflineSubmissions();
       }
     };
+    checkConnectionAndSync();
+  }, [router]);
+
+
+  const fetchChallenges = async (pageUrl?: string) => {
+    const token = await AsyncStorage.getItem("user_token");
+    const online = await isConnected();
+ 
+
+    if (online) {
+      try {
+        const data = await getChallenges(token || "", pageUrl);
+        setChallenges(data?.results || []);
+        // setTotalCount(data?.count || 0);
+        setNextPageUrl(data?.next || null);
+        setPrevPageUrl(data?.previous || null);
+
+        // Save to AsyncStorage
+        await AsyncStorage.setItem("cached_challenges", JSON.stringify(data));
+      } catch  {
+       
+      }
+    } else {
+      try {
+        const cached = await AsyncStorage.getItem("cached_challenges");
+        if (cached) {
+          const data = JSON.parse(cached);
+          setChallenges(data?.results || []);
+          // setTotalCount(data?.count || 0);
+          setNextPageUrl(null); // Pagination offline is not supported
+          setPrevPageUrl(null);
+        }
+      } catch {
+       
+      }
+    }
+  };
+
+  useEffect(() => {
     if (isAuthenticated) {
       fetchChallenges();
     }
   }, [setChallenges, isAuthenticated, router]);
 
-  const handleStartActivity = (challengeId: number) => {
-    const payload = {
-      challenge_id: challengeId,
-      is_active: true,
-    };
-    postActiveChallenge(payload);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchChallenges();
+    setRefreshing(false);
+  };
+
+  const handleNext = () => {
+    if (nextPageUrl) {
+      fetchChallenges(nextPageUrl);
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (prevPageUrl) {
+      fetchChallenges(prevPageUrl);
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      await AsyncStorage.removeItem("USER_EMAIL");
+      await AsyncStorage.removeItem("USER_PIN");
+
+      router.replace("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  const handleStartActivity = async (challengeId: number) => {
+    if (challengeId && challenges.length) {
+      const foundChallenge = challenges.find(
+        (ch) => ch.id === Number(challengeId)
+      );
+      if (foundChallenge?.brand) {
+        const { image, color_scheme } = foundChallenge?.brand;
+        setBrandDetails(image, color_scheme);
+        
+      }
+    }
+   
 
     router.push({
       pathname: "/onboarding",
@@ -57,17 +151,28 @@ export default function SlideshowScreen() {
       />
 
       {/* Top Right Logos */}
+      <ThemedButton
+        title="Logout"
+        onPress={handleLogout}
+        style={styles.logoutButton}
+      />
       <View style={styles.topRightContainer}>
         <Image
           source={require("@/assets/icons/Vector.png")}
           style={styles.logo}
         />
+
         <View style={styles.divider} />
         <Image source={company.logo} style={styles.logo} />
       </View>
 
       {/* Challenge List */}
-      <ScrollView contentContainerStyle={styles.challengeList}>
+      <ScrollView
+        contentContainerStyle={styles.challengeList}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
         {challenges.map((challenge) => (
           <View key={challenge.id} style={styles.challengeItem}>
             <View style={styles.challengeInfo}>
@@ -84,6 +189,35 @@ export default function SlideshowScreen() {
           </View>
         ))}
       </ScrollView>
+
+      {/* Pagination Controls */}
+      {(nextPageUrl || prevPageUrl) && (
+        <View style={styles.paginationContainer}>
+          <TouchableOpacity
+            onPress={handlePrev}
+            disabled={!prevPageUrl}
+            style={[
+              styles.paginationButton,
+              !prevPageUrl && styles.disabledButton,
+            ]}
+          >
+            <Text style={styles.paginationText}>Previous</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.pageText}>Page {currentPage}</Text>
+
+          <TouchableOpacity
+            onPress={handleNext}
+            disabled={!nextPageUrl}
+            style={[
+              styles.paginationButton,
+              !nextPageUrl && styles.disabledButton,
+            ]}
+          >
+            <Text style={styles.paginationText}>Next</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -93,7 +227,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bgImage: {
-    // ...StyleSheet.absoluteFillObject,
     position: "absolute",
     width: "100%",
     height: "70%",
@@ -105,6 +238,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 40,
     marginRight: 20,
+  },
+  logoutButton: {
+    backgroundColor: "#003366",
+    position: "absolute",
+    top: 40,
+    left: 20,
   },
   logo: {
     width: 60,
@@ -137,10 +276,10 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   activityButton: {
+    backgroundColor: "#003366",
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
-
   challengeName: {
     fontSize: 18,
     fontWeight: "600",
@@ -150,5 +289,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#555",
     marginBottom: 12,
+  },
+  paginationContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#ddd",
+  },
+  paginationButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 4,
+    marginHorizontal: 8,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  paginationText: {
+    fontSize: 14,
+    color: "#333",
+  },
+  pageText: {
+    fontSize: 14,
+    color: "#666",
+    marginHorizontal: 8,
   },
 });

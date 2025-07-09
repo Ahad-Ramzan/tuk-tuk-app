@@ -25,7 +25,8 @@ export default function SlideshowScreen() {
   const imageSize = isLandscape ? height * 0.5 : width * 0.7;
 
   const { id } = useLocalSearchParams();
-  const { challenges, setActiveChallenge } = useChallengeStore();
+  const { challenges, setActiveChallenge, ThemedColor, ThemedLogo } =
+    useChallengeStore();
   const [challengeData, setChallengeData] = useState<typeChallengeData | null>(
     null
   );
@@ -111,7 +112,8 @@ export default function SlideshowScreen() {
             style={styles.logo}
           />
           <View style={styles.divider} />
-          <Image source={company.logo} style={styles.logo} />
+          {ThemedLogo ? <Image source={{ uri: ThemedLogo}} style={styles.logo} /> :
+          <Image source={company.logo} style={styles.logo} />}
         </View>
       </View>
 
@@ -142,7 +144,7 @@ export default function SlideshowScreen() {
               style={[
                 styles.dot,
                 currentIndex === index && {
-                  backgroundColor: company.theme.primary,
+                  backgroundColor: ThemedColor || company.theme.primaryDark,
                 },
               ]}
             />

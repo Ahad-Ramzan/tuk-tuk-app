@@ -6,9 +6,9 @@ import React from "react";
 export default function Layout() {
   return (
     <AuthProvider>
-    <ThemeProvider>
-      <Slot />
-    </ThemeProvider>
+      <ThemeProvider>
+        <Slot />
+      </ThemeProvider>
     </AuthProvider>
   );
 }
