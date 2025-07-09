@@ -17,6 +17,7 @@ import * as FileSystem from "expo-file-system";
 import ScoreSetter from "./ScoreSetter";
 import ThemedButton from "./ThemedButton";
 import { isConnected } from "@/utility/Netinfo";
+import PasswordModal from "./PasswordModel";
 
 export default function DrawingBoard({ activity, onNext }) {
   const { addPagePoints, points } = useChallengeStore();
@@ -26,6 +27,9 @@ export default function DrawingBoard({ activity, onNext }) {
   const [scoreSelected, setScoreSelected] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
+  const [allowRetake, setAllowRetake] = useState(true);
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [mode, setMode] = useState("pen");
   const [paths, setPaths] = useState([]);
   const [currentPoints, setCurrentPoints] = useState([]);
@@ -71,8 +75,21 @@ export default function DrawingBoard({ activity, onNext }) {
 
   const handleCloseModal = () => {
     setIsActivityCompleted(false);
-    setScoreSelected(true);
+    setScoreSelected(false);
   };
+  const handleScoreSuccess = () => {
+    setIsActivityCompleted(false);
+    setScoreSelected(true);
+     setAllowRetake(false);
+  };
+  const handlePasswordCloseModal = () => {
+    setShowPasswordModal(false);
+  };
+  const handlePasswordSuccess = () => {
+    setShowPasswordModal(false);
+    setIsActivityCompleted(true);
+  };
+  
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -151,10 +168,10 @@ export default function DrawingBoard({ activity, onNext }) {
           "offline_submissions1",
           JSON.stringify(offlineQueue)
         );
-        Alert.alert(
-          "Saved Offline",
-          "Submission will be uploaded when internet is available."
-        );
+        // Alert.alert(
+        //   "Saved Offline",
+        //   "Submission will be uploaded when internet is available."
+        // );
         addPagePoints(Score);
         onNext();
       }
@@ -249,7 +266,7 @@ export default function DrawingBoard({ activity, onNext }) {
       </View>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.restartBtn} onPress={resetCanvas} disabled={isSubmitting}>
+        <TouchableOpacity style={styles.restartBtn} onPress={resetCanvas} disabled={isSubmitting || !allowRetake}>
           <Text>Restart</Text>
         </TouchableOpacity>
 
@@ -263,7 +280,7 @@ export default function DrawingBoard({ activity, onNext }) {
           ) : (
             <ThemedButton
               title="Assign Score"
-              onPress={() => setIsActivityCompleted(true)}
+              onPress={() => setShowPasswordModal(true)}
             />
           )
         ) : (
@@ -276,7 +293,15 @@ export default function DrawingBoard({ activity, onNext }) {
         <ScoreSetter
           isVisible={isActivityCompleted}
           onClose={handleCloseModal}
+          onSuccess={handleScoreSuccess}
         />
+         {showPasswordModal && (
+                            <PasswordModal
+                              visible={showPasswordModal}
+                              onClose={handlePasswordCloseModal}
+                              onSuccess={handlePasswordSuccess}
+                            />
+                          )}
       </View>
     </View>
   );

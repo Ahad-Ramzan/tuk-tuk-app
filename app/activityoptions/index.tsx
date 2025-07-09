@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import PasswordModal from "@/components/PasswordModel";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -32,12 +33,13 @@ export default function ActivityOptions({
   activity: typeActivity;
   onNext: () => void;
 }) {
-  const { addPagePoints, points,ThemedLogo } = useChallengeStore();
+  const { addPagePoints, points, ThemedLogo } = useChallengeStore();
   const [shuffledOptions, setShuffledOptions] = useState<
     { value: string; index: number }[]
   >([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [scoreSelected, setScoreSelected] = useState(false);
   const { company } = useTheme();
 
@@ -56,69 +58,85 @@ export default function ActivityOptions({
 
   const handleCloseModal = () => {
     setIsActivityCompleted(false);
-    setScoreSelected(true);
+    setScoreSelected(false);
   };
 
-  const handleActivityCompleted = () => {
+  const handlePasswordCloseModal = () => {
+    setShowPasswordModal(false);
+  };
+  const handlePasswordSuccess = () => {
+    setShowPasswordModal(false);
     setIsActivityCompleted(true);
-    addPagePoints(score);
+  };
+  const handleScoreSuccess = () => {
+    setScoreSelected(true);
+    setIsActivityCompleted(false);
+  
   };
 
-const handleSubmit = async () => {
-  if (selectedOption === null) return;
+  const handleSubmit = async () => {
+    if (selectedOption === null) return;
 
-  const isCorrect = shuffledOptions[selectedOption].index === 0; // choice_1 is correct
-  const earnedPoints = isCorrect ? score : 0;
+    const isCorrect = shuffledOptions[selectedOption].index === 0; // choice_1 is correct
+    const earnedPoints = isCorrect ? score : 0;
 
-  const payload = {
-    activity: activity.id,
-    latitude: activity.location_lat,
-    longitude: activity.location_lng,
-    answer: String(selectedOption + 1),
-    driver_score: activity.on_app ? earnedPoints : null,
-    type: "question", // optional to help identify in sync logic
-  };
+    const payload = {
+      activity: activity.id,
+      latitude: activity.location_lat,
+      longitude: activity.location_lng,
+      answer: String(selectedOption + 1),
+      driver_score: activity.on_app ? earnedPoints : null,
+      type: "question", // optional to help identify in sync logic
+    };
 
-  if (isCorrect) {
-    addPagePoints(score);
-  }
-
-  const net = await isConnected();
-  const token = await AsyncStorage.getItem("AUTH_TOKEN");
-
-  if (!net) {
-    try {
-      const rawQueue = await AsyncStorage.getItem("offline_submissions1");
-      const offlineQueue = rawQueue ? JSON.parse(rawQueue) : {};
-      const uniqueId = `${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      offlineQueue[uniqueId] = payload;
-      await AsyncStorage.setItem("offline_submissions1", JSON.stringify(offlineQueue));
-      Alert.alert("Offline", "Your answer was saved and will be submitted later.");
-      onNext();
-    } catch (err) {
-      console.error("❌ Failed to save offline answer:", err);
-      Alert.alert("Error", "Could not save your answer offline.");
+    if (isCorrect) {
+      addPagePoints(score);
     }
-    return;
-  }
 
-  // Online Submission
-  try {
-    await fetch("https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `token ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-    onNext();
-  } catch (error) {
-    console.error("Error creating challenge:", error);
-    Alert.alert("Submission Failed", "Please try again.");
-  }
-};
+    const net = await isConnected();
+    const token = await AsyncStorage.getItem("AUTH_TOKEN");
+
+    if (!net) {
+      try {
+        const rawQueue = await AsyncStorage.getItem("offline_submissions1");
+        const offlineQueue = rawQueue ? JSON.parse(rawQueue) : {};
+        const uniqueId = `${Date.now()}_${Math.random()
+          .toString(36)
+          .substring(2, 6)}`;
+        offlineQueue[uniqueId] = payload;
+        await AsyncStorage.setItem(
+          "offline_submissions1",
+          JSON.stringify(offlineQueue)
+        );
+        // Alert.alert("Offline", "Your answer was saved and will be submitted later.");
+        onNext();
+      } catch (err) {
+        console.error("❌ Failed to save offline answer:", err);
+        Alert.alert("Error", "Could not save your answer offline.");
+      }
+      return;
+    }
+
+    // Online Submission
+    try {
+      await fetch(
+        "https://backend.ecity.estelatechnologies.com/api/ecity/Activity/submissions/",
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `token ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+      onNext();
+    } catch (error) {
+      console.error("Error creating challenge:", error);
+      Alert.alert("Submission Failed", "Please try again.");
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -133,11 +151,11 @@ const handleSubmit = async () => {
       {ThemedLogo ? (
         <Image source={{ uri: ThemedLogo }} style={styles.logo1} />
       ) : (
-      <Image
-        source={company.fulllogo}
-        style={styles.logo}
-        resizeMode="contain"
-      />  
+        <Image
+          source={company.fulllogo}
+          style={styles.logo}
+          resizeMode="contain"
+        />
       )}
 
       {/* Main content */}
@@ -170,7 +188,7 @@ const handleSubmit = async () => {
           ) : (
             <ThemedButton
               title="Assign Score"
-              onPress={handleActivityCompleted}
+              onPress={() => setShowPasswordModal(true)}
             />
           )
         ) : (
@@ -180,7 +198,16 @@ const handleSubmit = async () => {
         <ScoreSetter
           isVisible={isActivityCompleted}
           onClose={handleCloseModal}
+          onSuccess={handleScoreSuccess}
         />
+
+        {showPasswordModal && (
+          <PasswordModal
+            visible={showPasswordModal}
+            onClose={handlePasswordCloseModal}
+            onSuccess={handlePasswordSuccess}
+          />
+        )}
       </View>
     </View>
   );

@@ -49,12 +49,12 @@ export default function MapPage() {
   const [showStartActivity, setShowStartActivity] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  // const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showExitPasswordModal, setShowExitPasswordModal] = useState(false);
 
-  const handlePasswordSuccess = () => {
-    setShowStartActivity(true);
-  };
+  // const handlePasswordSuccess = () => {
+  //   setShowStartActivity(true);
+  // };
 
   const handleExitPasswordSuccess = () => {
     resetAllPoints();
@@ -238,7 +238,7 @@ export default function MapPage() {
             );
 
             if (
-              distance < 50 &&
+              distance < 25 &&
               !showStartActivity &&
               isTaskAvailable(marker.id, marker.index)
             ) {
@@ -326,7 +326,7 @@ export default function MapPage() {
       </MapView>
 
       {/* Custom marker labels positioned absolutely - only show when no modals are open */}
-      {!showStartActivity && !showPasswordModal && !showExitPasswordModal && markerPositions.map((marker, index) => {
+      {!showStartActivity  && !showExitPasswordModal && markerPositions.map((marker, index) => {
         const isCompleted = completedTaskIds.includes(marker.id);
         const isAvailable = isTaskAvailable(marker.id, marker.index);
 
@@ -356,7 +356,7 @@ export default function MapPage() {
             onPress={() => {
               if (isAvailable && !isCompleted) {
                 setSelectedTaskId(marker.id);
-                setShowPasswordModal(true);
+                setShowStartActivity(true);
               } else if (!isAvailable && !isCompleted) {
                 if (randomOrder === false) {
                   alert("Complete previous tasks first!");
@@ -466,13 +466,13 @@ export default function MapPage() {
       </View>
 
       {/* Password Modal for Task Start */}
-      {showPasswordModal && (
+      {/* {showPasswordModal && (
         <PasswordModal
           visible={showPasswordModal}
           onClose={() => setShowPasswordModal(false)}
           onSuccess={handlePasswordSuccess}
         />
-      )}
+      )} */}
 
       {/* Password Modal for Exit */}
       {showExitPasswordModal && (

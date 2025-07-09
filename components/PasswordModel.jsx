@@ -195,7 +195,7 @@ const PasswordModal = ({ visible, onClose, onSuccess }) => {
               <Text style={styles.title}>Enter your password</Text>
               <Text style={styles.subtitle}>To start the challenge</Text>
 
-              <Text style={styles.passwordLabel}>Password</Text>
+              
 
               <View style={styles.pinContainer}>
                 {pin.map((digit, index) => (
@@ -324,13 +324,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     textAlign: "center",
   },
-  passwordLabel: {
-    fontSize: 16,
-    color: "#333",
-    alignSelf: "flex-start",
-    marginBottom: 16,
-    fontWeight: "500",
-  },
+  
   pinContainer: {
     flexDirection: "row",
     justifyContent: "space-between",

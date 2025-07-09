@@ -22,6 +22,7 @@ import {
   Linking,
   Platform,
 } from "react-native";
+import PasswordModal from "@/components/PasswordModel";
 
 export default function VideoPage({ activity, onNext }) {
   const [facing] = useState(CameraType?.back);
@@ -31,6 +32,9 @@ export default function VideoPage({ activity, onNext }) {
   const [recordedVideo, setRecordedVideo] = useState(null);
   const [scoreSelected, setScoreSelected] = useState(false);
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
+  const [allowRetake, setAllowRetake] = useState(true);
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -307,12 +311,22 @@ const handleMicrophonePermissionRequest = async () => {
 
   const handleCloseModal = () => {
     setIsActivityCompleted(false);
-    setScoreSelected(true);
+    setScoreSelected(false);
   };
-  
-  const handleActivityCompleted = () => {
+  const handlePasswordCloseModal = () => {
+    setShowPasswordModal(false);
+  };
+  const handleScoreSuccess = () => {
+    setScoreSelected(true);
+    setIsActivityCompleted(false);
+    setAllowRetake(false);
+  };
+  const handlePasswordSuccess = () => {
+    setShowPasswordModal(false);
     setIsActivityCompleted(true);
   };
+ 
+  
 
   const startRecording = async () => {
     if (cameraRef.current && !isRecording) {
@@ -376,7 +390,7 @@ const handleMicrophonePermissionRequest = async () => {
         const uniqueId = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
         offlineQueue[uniqueId] = payload;
         await AsyncStorage.setItem("offline_submissions1", JSON.stringify(offlineQueue));
-        Alert.alert("Offline", "You're offline. Video saved locally.");
+        // Alert.alert("Offline", "You're offline. Video saved locally.");
         addPagePoints(Score);
         onNext();
       } catch (err) {
@@ -462,7 +476,7 @@ const handleMicrophonePermissionRequest = async () => {
           />
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.outlineBtn} onPress={retakeVideo}
-            disabled={isSubmitting}>
+            disabled={isSubmitting || !allowRetake}>
               <Text style={styles.outlineText}>Retake</Text>
             </TouchableOpacity>
             {activity.on_app ? (
@@ -475,7 +489,9 @@ const handleMicrophonePermissionRequest = async () => {
               ) : (
                 <ThemedButton
                   title="Assign Score"
-                  onPress={handleActivityCompleted}
+                  onPress={() => {
+                    setShowPasswordModal(true);
+                  }}
                 />
               )
             ) : (
@@ -489,7 +505,15 @@ const handleMicrophonePermissionRequest = async () => {
           <ScoreSetter
             isVisible={isActivityCompleted}
             onClose={handleCloseModal}
+            onSuccess={handleScoreSuccess}
           />
+          {showPasswordModal && (
+                    <PasswordModal
+                      visible={showPasswordModal}
+                      onClose={handlePasswordCloseModal}
+                      onSuccess={handlePasswordSuccess}
+                    />
+                  )}
         </View>
       ) : isCameraOpen ? (
         <View style={styles.container1}>

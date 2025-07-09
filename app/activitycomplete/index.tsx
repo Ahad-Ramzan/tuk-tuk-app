@@ -9,6 +9,7 @@ import { useChallengeStore } from "@/store/challengeStore";
 import { isConnected } from "@/utility/Netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { postChallenge } from "@/services/api";
+import PasswordModal from "@/components/PasswordModel";
 export default function ActivityPage({
   activity,
   onNext,
@@ -25,15 +26,27 @@ export default function ActivityPage({
   const { addPagePoints, points, ThemedLogo } = useChallengeStore();
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [scoreSelected, setScoreSelected] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const { company } = useTheme();
 
-  const handleActivityCompleted = () => {
-    setIsActivityCompleted(true);
+  
+ const handleScoreSuccess = () => {
+    setScoreSelected(true);
+    setIsActivityCompleted(false);
   };
 
+ const handlePasswordSuccess =() =>{
+    setShowPasswordModal(false);
+    setIsActivityCompleted(true);
+ }
+  const handlePasswordCloseModal = () => {
+    setShowPasswordModal(false);
+    
+  };
   const handleCloseModal = () => {
     setIsActivityCompleted(false);
-    setScoreSelected(true);
+    setScoreSelected(false);
+    setShowPasswordModal(false);
   };
   const handleSubmit = async () => {
     const Score = activity.on_app ? points : activity.score;
@@ -97,14 +110,21 @@ export default function ActivityPage({
           ) : (
             <ThemedButton
               title="Assign Score"
-              onPress={handleActivityCompleted}
+              onPress={() => setShowPasswordModal(true)}
             />
           )
         ) : (
           <ThemedButton title="Submit" onPress={handleSubmit} />
         )}
       </View>
-      <ScoreSetter isVisible={isActivityCompleted} onClose={handleCloseModal} />
+      <ScoreSetter isVisible={isActivityCompleted} onClose={handleCloseModal} onSuccess={handleScoreSuccess}  />
+      {showPasswordModal && (
+        <PasswordModal
+          visible={showPasswordModal}
+          onClose={handlePasswordCloseModal}
+          onSuccess={handlePasswordSuccess}
+        />
+      )}
     </View>
   );
 }

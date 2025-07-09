@@ -16,9 +16,11 @@ const SCORE_OPTIONS = [0, 5, 10, 15, 20, 25];
 const ScoreSetter = ({
   isVisible,
   onClose,
+  onSuccess,
 }: {
   isVisible: boolean;
   onClose: () => void;
+  onSuccess: () => void;
 }) => {
   const [score, setScore] = useState<number | null>(null);
   const { setPoints } = useChallengeStore();
@@ -36,7 +38,7 @@ const ScoreSetter = ({
     if (score !== null) {
       setPoints(score); 
     }
-    onClose();
+    onSuccess();
   };
 
   return (

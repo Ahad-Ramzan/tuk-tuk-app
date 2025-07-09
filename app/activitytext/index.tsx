@@ -21,6 +21,7 @@ import { postChallenge } from "@/services/api";
 import { useChallengeStore } from "@/store/challengeStore";
 import { isConnected } from "@/utility/Netinfo";
 import { typeActivity } from "@/types";
+import PasswordModal from "@/components/PasswordModel";
 
 type Props = {
   activity: typeActivity;
@@ -45,11 +46,27 @@ export default function TextQuiz({ activity, onNext }: Props) {
   const [answer, setAnswer] = useState("");
   const [isActivityCompleted, setIsActivityCompleted] = useState(false);
   const [scoreSelected, setScoreSelected] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  const handleActivityCompleted = () => setIsActivityCompleted(true);
+ 
+
+  const handleScoreSuccess = () => {
+    setScoreSelected(true);
+    setIsActivityCompleted(false);
+    handleSubmit();
+  };
+  const handlePasswordSuccess = () => {
+    setShowPasswordModal(false);
+    setIsActivityCompleted(true);
+  };
   const handleCloseModal = () => {
     setIsActivityCompleted(false);
-    setScoreSelected(true);
+    setScoreSelected(false);
+    
+  };
+  const handlePasswordCloseModal = () => {
+    setShowPasswordModal(false);
+    // setIsActivityCompleted(false);
   };
 
   const handleSubmit = async () => {
@@ -148,7 +165,7 @@ export default function TextQuiz({ activity, onNext }: Props) {
                 {activity.on_app && !scoreSelected ? (
                   <ThemedButton
                     title="Assign Score"
-                    onPress={handleActivityCompleted}
+                    onPress={() => setShowPasswordModal(true)}
                   />
                 ) : (
                   <ThemedButton title="Submit" onPress={handleSubmit} />
@@ -158,7 +175,15 @@ export default function TextQuiz({ activity, onNext }: Props) {
               <ScoreSetter
                 isVisible={isActivityCompleted}
                 onClose={handleCloseModal}
+                onSuccess={handleScoreSuccess}
               />
+              {showPasswordModal && (
+                <PasswordModal
+                  visible={showPasswordModal}
+                  onClose={handlePasswordCloseModal}
+                  onSuccess={handlePasswordSuccess}
+                />
+              )}
             </View>
           </View>
         </ScrollView>
