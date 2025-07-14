@@ -50,11 +50,9 @@ export default function SlideshowScreen() {
     checkConnectionAndSync();
   }, [router]);
 
-
   const fetchChallenges = async (pageUrl?: string) => {
     const token = await AsyncStorage.getItem("user_token");
     const online = await isConnected();
- 
 
     if (online) {
       try {
@@ -66,9 +64,7 @@ export default function SlideshowScreen() {
 
         // Save to AsyncStorage
         await AsyncStorage.setItem("cached_challenges", JSON.stringify(data));
-      } catch  {
-       
-      }
+      } catch {}
     } else {
       try {
         const cached = await AsyncStorage.getItem("cached_challenges");
@@ -79,9 +75,7 @@ export default function SlideshowScreen() {
           setNextPageUrl(null); // Pagination offline is not supported
           setPrevPageUrl(null);
         }
-      } catch {
-       
-      }
+      } catch {}
     }
   };
 
@@ -131,10 +125,8 @@ export default function SlideshowScreen() {
       if (foundChallenge?.brand) {
         const { image, color_scheme } = foundChallenge?.brand;
         setBrandDetails(image, color_scheme);
-        
       }
     }
-   
 
     router.push({
       pathname: "/onboarding",
