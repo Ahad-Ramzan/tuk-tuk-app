@@ -28,41 +28,44 @@ export default function MapPage() {
     resetCompletedTaskIds,
     ThemedColor,
     ThemedLogo,
+    getTimer,
   } = useChallengeStore();
   const { company } = useTheme();
+  // Restore removed state declarations
+  const [showStartActivity, setShowStartActivity] = useState({
+    visible: false,
+    requirePassword: true,
+  });
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [showExitPasswordModal, setShowExitPasswordModal] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [progress, setProgress] = useState();
   const randomOrder = activeChallenge?.random_order;
 
-  const mapRef = useRef(null);
-  const [mapRegion, setMapRegion] = useState(null);
-  const [markerPositions, setMarkerPositions] = useState([]);
-  const [screenDimensions, setScreenDimensions] = useState(Dimensions.get("window"));
-
-  const convertToSeconds = (timeString) => {
-    const [hours, minutes, seconds] = timeString.split(":").map(Number);
-    return hours * 3600 + minutes * 60 + seconds;
-  };
-  const [timer, setTimer] = useState(() =>
-    convertToSeconds(activeChallenge?.time_limit || "00:00:00")
-  );
-
-  const [showStartActivity, setShowStartActivity] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
-  const [currentLocation, setCurrentLocation] = useState(null);
-  // const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showExitPasswordModal, setShowExitPasswordModal] = useState(false);
-
-  // const handlePasswordSuccess = () => {
-  //   setShowStartActivity(true);
-  // };
-
+  // Restore totalDots and handleExitPasswordSuccess
+  const totalDots = 6;
   const handleExitPasswordSuccess = () => {
     resetAllPoints();
     resetCompletedTaskIds();
     router.push("/");
   };
 
-  const totalDots = 6;
+  const mapRef = useRef(null);
+  const [mapRegion, setMapRegion] = useState(null);
+  const [markerPositions, setMarkerPositions] = useState([]);
+  const [screenDimensions, setScreenDimensions] = useState(
+    Dimensions.get("window")
+  );
+
+  // Add a local state to force re-render every second
+  const [, forceUpdate] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      forceUpdate((n) => n + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Function to truncate text
   const truncateText = (text, maxLength = 20) => {
@@ -73,7 +76,7 @@ export default function MapPage() {
 
   // Listen for screen dimension changes (rotation)
   useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+    const subscription = Dimensions.addEventListener("change", ({ window }) => {
       setScreenDimensions(window);
     });
 
@@ -151,7 +154,10 @@ export default function MapPage() {
       .filter(Boolean);
   };
 
- const markers = useMemo(() => extractTaskLocations(activeChallenge), [activeChallenge]);
+  const markers = useMemo(
+    () => extractTaskLocations(activeChallenge),
+    [activeChallenge]
+  );
 
   // Update marker positions when map region changes OR screen rotates
   useEffect(() => {
@@ -172,13 +178,6 @@ export default function MapPage() {
       setMarkerPositions(positions);
     }
   }, [mapRegion, markers, screenDimensions]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimer((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
@@ -217,9 +216,9 @@ export default function MapPage() {
 
       locationSubscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 20000,
-          distanceInterval: 30,
+          accuracy: Location.Accuracy.Highest,
+          timeInterval: 10000,
+          distanceInterval: 3,
         },
         (location) => {
           const userLoc = {
@@ -238,12 +237,12 @@ export default function MapPage() {
             );
 
             if (
-              distance < 25 &&
-              !showStartActivity &&
+              distance < 2 &&
+              !showStartActivity.visible &&
               isTaskAvailable(marker.id, marker.index)
             ) {
               setSelectedTaskId(marker.id);
-              setShowStartActivity(true);
+              setShowStartActivity({ visible: true, requirePassword: false });
             }
           });
         }
@@ -259,6 +258,17 @@ export default function MapPage() {
     };
   }, [markers, showStartActivity, completedTaskIds, randomOrder]);
 
+  //  follow user location
+  useEffect(() => {
+    if (isFollowing && currentLocation && mapRef.current) {
+      mapRef.current.animateToRegion({
+        ...currentLocation,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
+    }
+  }, [currentLocation, isFollowing]);
+
   return (
     <View style={styles.container}>
       <MapView
@@ -273,6 +283,7 @@ export default function MapPage() {
         onRegionChangeComplete={(region) => {
           setMapRegion(region);
         }}
+        onPanDrag={() => setIsFollowing(false)} // Disable follow mode on user pan
       >
         {/* Simple dot markers without labels */}
         {markers.map((marker, index) => {
@@ -326,82 +337,90 @@ export default function MapPage() {
       </MapView>
 
       {/* Custom marker labels positioned absolutely - only show when no modals are open */}
-      {!showStartActivity  && !showExitPasswordModal && markerPositions.map((marker, index) => {
-        const isCompleted = completedTaskIds.includes(marker.id);
-        const isAvailable = isTaskAvailable(marker.id, marker.index);
+      {!showStartActivity.visible &&
+        !showExitPasswordModal &&
+        markerPositions.map((marker, index) => {
+          const isCompleted = completedTaskIds.includes(marker.id);
+          const isAvailable = isTaskAvailable(marker.id, marker.index);
 
-        // Don't render if marker is off-screen - use current screen dimensions
-        if (
-          marker.x < -100 ||
-          marker.x > screenDimensions.width + 100 ||
-          marker.y < -100 ||
-          marker.y > screenDimensions.height + 100
-        ) {
-          return null;
-        }
+          // Don't render if marker is off-screen - use current screen dimensions
+          if (
+            marker.x < -100 ||
+            marker.x > screenDimensions.width + 100 ||
+            marker.y < -100 ||
+            marker.y > screenDimensions.height + 100
+          ) {
+            return null;
+          }
 
-        const displayText = truncateText(marker.title || `Task ${index + 1}`);
-        const lockText = !isAvailable && !isCompleted ? " 🔒" : "";
+          const displayText = truncateText(marker.title || `Task ${index + 1}`);
+          const lockText = !isAvailable && !isCompleted ? " 🔒" : "";
 
-        return (
-          <TouchableOpacity
-            key={`label-${marker.id}`}
-            style={[
-              styles.customMarkerLabel,
-              {
-                left: marker.x - 75, // Center the label (150/2 = 75)
-                top: marker.y - 80, // Position above the marker
-              },
-            ]}
-            onPress={() => {
-              if (isAvailable && !isCompleted) {
-                setSelectedTaskId(marker.id);
-                setShowStartActivity(true);
-              } else if (!isAvailable && !isCompleted) {
-                if (randomOrder === false) {
-                  alert("Complete previous tasks first!");
+          return (
+            <TouchableOpacity
+              key={`label-${marker.id}`}
+              style={[
+                styles.customMarkerLabel,
+                {
+                  left: marker.x - 75, // Center the label (150/2 = 75)
+                  top: marker.y - 80, // Position above the marker
+                },
+              ]}
+              onPress={() => {
+                if (isAvailable && !isCompleted) {
+                  setSelectedTaskId(marker.id);
+                  setShowStartActivity({
+                    visible: true,
+                    requirePassword: true,
+                  });
+                } else if (!isAvailable && !isCompleted) {
+                  if (randomOrder === false) {
+                    alert("Complete previous tasks first!");
+                  }
                 }
-              }
-            }}
-            activeOpacity={0.8}
-          >
-            <View
-              style={[
-                styles.labelContainer,
-                {
-                  backgroundColor: isCompleted
-                    ? "rgba(176, 176, 176, 0.9)"
-                    : !isAvailable
-                    ? "rgba(102, 102, 102, 0.9)"
-                    : "rgba(0, 0, 0, 0.8)",
-                },
-              ]}
+              }}
+              activeOpacity={0.8}
             >
-              <Text style={styles.labelTextCustom} numberOfLines={2}>
-                {displayText + lockText}
-              </Text>
-            </View>
-            {/* Arrow pointing down to marker */}
-            <View
-              style={[
-                styles.labelArrow,
-                {
-                  borderTopColor: isCompleted
-                    ? "rgba(176, 176, 176, 0.9)"
-                    : !isAvailable
-                    ? "rgba(102, 102, 102, 0.9)"
-                    : "rgba(0, 0, 0, 0.8)",
-                },
-              ]}
-            />
-          </TouchableOpacity>
-        );
-      })}
+              <View
+                style={[
+                  styles.labelContainer,
+                  {
+                    backgroundColor: isCompleted
+                      ? "rgba(176, 176, 176, 0.9)"
+                      : !isAvailable
+                      ? "rgba(102, 102, 102, 0.9)"
+                      : "rgba(0, 0, 0, 0.8)",
+                  },
+                ]}
+              >
+                <Text style={styles.labelTextCustom} numberOfLines={2}>
+                  {displayText + lockText}
+                </Text>
+              </View>
+              {/* Arrow pointing down to marker */}
+              <View
+                style={[
+                  styles.labelArrow,
+                  {
+                    borderTopColor: isCompleted
+                      ? "rgba(176, 176, 176, 0.9)"
+                      : !isAvailable
+                      ? "rgba(102, 102, 102, 0.9)"
+                      : "rgba(0, 0, 0, 0.8)",
+                  },
+                ]}
+              />
+            </TouchableOpacity>
+          );
+        })}
 
-      {showStartActivity && selectedTaskId && (
+      {showStartActivity.visible && selectedTaskId && (
         <StartActivity
-          onClose={() => setShowStartActivity(false)}
+          onClose={() =>
+            setShowStartActivity({ visible: false, requirePassword: true })
+          }
           ID={selectedTaskId}
+          requirePassword={showStartActivity.requirePassword}
         />
       )}
 
@@ -455,6 +474,7 @@ export default function MapPage() {
           icon={<Feather name="navigation" style={styles.recenterIcon} />}
           onPress={() => {
             if (currentLocation && mapRef.current) {
+              setIsFollowing(true); // Enable follow mode
               mapRef.current.animateToRegion({
                 ...currentLocation,
                 latitudeDelta: 0.01,
@@ -485,25 +505,28 @@ export default function MapPage() {
 
       <View style={styles.timerContainer}>
         <View
-          style={[styles.timerBox, timer <= 30 ? styles.timerWarning : null]}
+          style={[
+            styles.timerBox,
+            getTimer() <= 30 ? styles.timerWarning : null,
+          ]}
         >
           <Ionicons
             name="stopwatch-outline"
             style={[
               styles.timerIcon,
-              timer <= 30 ? styles.timerwarningicon : null,
+              getTimer() <= 30 ? styles.timerwarningicon : null,
             ]}
           />
           <Text
             style={[
               styles.timerText,
-              timer <= 30 ? styles.timerwarningtext : null,
+              getTimer() <= 30 ? styles.timerwarningtext : null,
             ]}
           >
-            {timer === 0 ? (
+            {getTimer() === 0 ? (
               <Text style={styles.timerExpiredText}>Times Up</Text>
             ) : (
-              formatTime(timer)
+              formatTime(getTimer())
             )}
           </Text>
         </View>

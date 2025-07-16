@@ -1,6 +1,13 @@
 import { typeActivity, typeChallengeData } from "@/types";
 import { create } from "zustand";
 
+// Add convertToSeconds utility
+function convertToSeconds(timeString?: string) {
+  if (!timeString) return 0;
+  const [hours, minutes, seconds] = timeString.split(":").map(Number);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
 interface ChallengeState {
   challenges: typeChallengeData[];
   setChallenges: (challenges: typeChallengeData[]) => void;
@@ -26,15 +33,29 @@ interface ChallengeState {
   ThemedLogo: string | null;
   ThemedColor: string | null;
   setBrandDetails: (image: string, color: string) => void;
-     disabled: boolean;
+  disabled: boolean;
   setDisabled: (status: boolean) => void;
+  timerEndTimestamp: number | null;
+  setTimerEndTimestamp: (timestamp: number | null) => void;
+  resetTimerEndTimestamp: () => void;
+  getTimer: () => number;
 }
 
-export const useChallengeStore = create<ChallengeState>((set) => ({
+export const useChallengeStore = create<ChallengeState>((set, get) => ({
   challenges: [],
   setChallenges: (challenges) => set({ challenges }),
   activeChallenge: null,
-  setActiveChallenge: (challenge) => set({ activeChallenge: challenge }),
+  setActiveChallenge: (challenge) => {
+    set({ activeChallenge: challenge });
+    // Reset timerEndTimestamp when a new challenge is started
+    if (challenge) {
+      const duration =
+        convertToSeconds(challenge.time_limit || "00:00:00") * 1000;
+      set({ timerEndTimestamp: Date.now() + duration });
+    } else {
+      set({ timerEndTimestamp: null });
+    }
+  },
   activeTask: null,
   setActiveTask: (task) => set({ activeTask: task }),
   // Points state
@@ -77,4 +98,13 @@ export const useChallengeStore = create<ChallengeState>((set) => ({
     set({ ThemedLogo: image, ThemedColor: color }),
   disabled: false,
   setDisabled: (status) => set({ disabled: status }),
+  timerEndTimestamp: null,
+  setTimerEndTimestamp: (timestamp) => set({ timerEndTimestamp: timestamp }),
+  resetTimerEndTimestamp: () => set({ timerEndTimestamp: null }),
+  getTimer: () => {
+    const { timerEndTimestamp } = get();
+    if (!timerEndTimestamp) return 0;
+    const remaining = Math.floor((timerEndTimestamp - Date.now()) / 1000);
+    return remaining > 0 ? remaining : 0;
+  },
 }));

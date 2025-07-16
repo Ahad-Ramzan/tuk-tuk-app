@@ -7,7 +7,7 @@ import { useChallengeStore } from "@/store/challengeStore";
 import { router } from "expo-router";
 import { Audio } from "expo-av";
 
-const ActivityPrompt = ({ onClose, ID }) => {
+const ActivityPrompt = ({ onClose, ID, requirePassword = true }) => {
   const [showError, setShowError] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const { activeChallenge, setActiveTask } = useChallengeStore();
@@ -34,7 +34,11 @@ const ActivityPrompt = ({ onClose, ID }) => {
 
   const handleStartActivity = async () => {
     await stopBell();
-    setShowPasswordModal(true);
+    if (requirePassword) {
+      setShowPasswordModal(true);
+    } else {
+      router.push("/taskmanager");
+    }
   };
 
   const handlePasswordSuccess = () => {
