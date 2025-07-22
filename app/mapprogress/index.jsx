@@ -237,7 +237,7 @@ export default function MapPage() {
             );
 
             if (
-              distance < 2 &&
+              distance < 25 &&
               !showStartActivity.visible &&
               isTaskAvailable(marker.id, marker.index)
             ) {
