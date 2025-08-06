@@ -216,9 +216,10 @@ export default function MapPage() {
 
       locationSubscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.Highest,
-          timeInterval: 10000,
-          distanceInterval: 3,
+          accuracy: Location.Accuracy.BestForNavigation,
+          timeInterval: 500,
+          distanceInterval: 0.5,
+          mayShowUserSettingsDialog:true,
         },
         (location) => {
           const userLoc = {
@@ -237,7 +238,7 @@ export default function MapPage() {
             );
 
             if (
-              distance < 25 &&
+              distance < 50 &&
               !showStartActivity.visible &&
               isTaskAvailable(marker.id, marker.index)
             ) {
@@ -263,8 +264,8 @@ export default function MapPage() {
     if (isFollowing && currentLocation && mapRef.current) {
       mapRef.current.animateToRegion({
         ...currentLocation,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
       });
     }
   }, [currentLocation, isFollowing]);
@@ -280,10 +281,12 @@ export default function MapPage() {
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         }}
+        showsUserLocation={true}
+        followsUserLocation={isFollowing}
         onRegionChangeComplete={(region) => {
           setMapRegion(region);
         }}
-        onPanDrag={() => setIsFollowing(false)} // Disable follow mode on user pan
+        onPanDrag={() => setIsFollowing(false)} 
       >
         {/* Simple dot markers without labels */}
         {markers.map((marker, index) => {
@@ -322,7 +325,7 @@ export default function MapPage() {
           );
         })}
 
-        {currentLocation && (
+        {/* {currentLocation && (
           <Marker coordinate={currentLocation}>
             <View style={styles.currentLocationOuter}>
               <View
@@ -333,7 +336,7 @@ export default function MapPage() {
               />
             </View>
           </Marker>
-        )}
+        )} */}
       </MapView>
 
       {/* Custom marker labels positioned absolutely - only show when no modals are open */}
@@ -474,11 +477,11 @@ export default function MapPage() {
           icon={<Feather name="navigation" style={styles.recenterIcon} />}
           onPress={() => {
             if (currentLocation && mapRef.current) {
-              setIsFollowing(true); // Enable follow mode
+              setIsFollowing(true); 
               mapRef.current.animateToRegion({
                 ...currentLocation,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
+                latitudeDelta: 0.005,
+                longitudeDelta: 0.005,
               });
             }
           }}
