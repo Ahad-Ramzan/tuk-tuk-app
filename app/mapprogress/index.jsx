@@ -8,12 +8,12 @@ import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Dimensions,
   Image,
   StyleSheet,
   Text,
-  View,
   TouchableOpacity,
-  Dimensions,
+  View,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
@@ -159,6 +159,21 @@ export default function MapPage() {
     [activeChallenge]
   );
 
+  // Function to find the next available task for initial region
+  const getNextAvailableTask = useMemo(() => {
+    if (!markers.length) return null;
+
+    // Find the first available task that's not completed
+    const nextTask = markers.find(
+      (marker) =>
+        isTaskAvailable(marker.id, marker.index) &&
+        !completedTaskIds.includes(marker.id)
+    );
+
+    // If no available tasks, return the first marker as fallback
+    return nextTask || markers[0];
+  }, [markers, completedTaskIds, randomOrder]);
+
   // Update marker positions when map region changes OR screen rotates
   useEffect(() => {
     if (mapRegion && markers.length > 0) {
@@ -219,7 +234,7 @@ export default function MapPage() {
           accuracy: Location.Accuracy.BestForNavigation,
           timeInterval: 500,
           distanceInterval: 0.5,
-          mayShowUserSettingsDialog:true,
+          mayShowUserSettingsDialog: true,
         },
         (location) => {
           const userLoc = {
@@ -276,8 +291,8 @@ export default function MapPage() {
         ref={mapRef}
         style={styles.map}
         initialRegion={{
-          latitude: markers[0]?.latitude || 0,
-          longitude: markers[0]?.longitude || 0,
+          latitude: getNextAvailableTask?.latitude || 0,
+          longitude: getNextAvailableTask?.longitude || 0,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         }}
@@ -286,7 +301,7 @@ export default function MapPage() {
         onRegionChangeComplete={(region) => {
           setMapRegion(region);
         }}
-        onPanDrag={() => setIsFollowing(false)} 
+        onPanDrag={() => setIsFollowing(false)}
       >
         {/* Simple dot markers without labels */}
         {markers.map((marker, index) => {
@@ -477,7 +492,7 @@ export default function MapPage() {
           icon={<Feather name="navigation" style={styles.recenterIcon} />}
           onPress={() => {
             if (currentLocation && mapRef.current) {
-              setIsFollowing(true); 
+              setIsFollowing(true);
               mapRef.current.animateToRegion({
                 ...currentLocation,
                 latitudeDelta: 0.005,
