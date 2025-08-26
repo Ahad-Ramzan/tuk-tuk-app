@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Tuktuk",
+    "name": "e-City Challenge",
     "slug": "my-app",
     "version": "1.0.1",
     "orientation": "default",
     "icon": "./assets/icons/appstore.png",
-    "scheme": "tuktuk",
+    "scheme": "e-city challenge",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -21,7 +21,7 @@
       },
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyBYZjc2S9An6EUY9AYRDNjTaY6aUar1Bzs"
+          "apiKey": "AIzaSyCpPnSQGjHiP2wy-Rokvwk-l99DVL9EjxA"
         }
       },
       "edgeToEdgeEnabled": true,
@@ -31,12 +31,12 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_EXTERNAL_STORAGE"
       ],
-      "package": "com.tuktuk.app"
+      "package": "com.ecity.challenge"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/icons/Vector.png"
     },
     "plugins": [
       [
