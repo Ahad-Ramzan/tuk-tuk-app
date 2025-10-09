@@ -13,6 +13,7 @@ export default function PointsScreen() {
     resetAllPoints,
     grandTotalPoints,
     resetCompletedTaskIds,
+    showNiceWork,
   } = useChallengeStore();
   const { company } = useTheme();
   const points = grandTotalPoints;
@@ -50,7 +51,8 @@ export default function PointsScreen() {
      
       <View style={styles.pointsContainer}>
         <Image source={star} style={[styles.star, styles.leftStar]} />
-        <Text style={styles.pointsText}>{points} Points</Text>
+        {showNiceWork ? <Text style={styles.pointsText}>Nice Work!</Text> :
+        <Text style={styles.pointsText}>{points} Points</Text>}
         <Image source={star} style={[styles.star, styles.rightStar]} />
       </View>
 

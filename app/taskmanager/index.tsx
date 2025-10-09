@@ -1,14 +1,14 @@
-import React, { useEffect, useState, useCallback, JSX } from "react";
-import {
-  Text,
-  View,
-  ActivityIndicator,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
 import { useChallengeStore } from "@/store/challengeStore";
 import { typeActivity } from "@/types";
 import { router } from "expo-router";
+import React, { JSX, useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 // Fallback components
 const LoadingFallback = () => (
@@ -77,9 +77,8 @@ export default function ImagePage() {
     const allCompleted = activeTask
       ? activeTask.every((task) => task.status === "true")
       : false;
-
     setDisabled(allCompleted);
-  }, [activeTask]);
+  }, [activeTask, setDisabled]);
 
   const handleNext = useCallback(() => {
     if (activeTask && currentIndex < activeTask.length - 1) {
@@ -95,7 +94,14 @@ export default function ImagePage() {
         router.push("/feedback");
       }
     }
-  }, [activeTask, currentIndex]);
+  }, [
+    activeTask,
+    currentIndex,
+    disabled,
+    selectedTask,
+    completedTask,
+    completeActivity,
+  ]);
 
   const handleSkip = useCallback(() => {
     handleNext();

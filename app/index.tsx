@@ -24,7 +24,8 @@ import useAuth from "@/hooks/useAuth";
 export default function SlideshowScreen() {
   const router = useRouter();
   const { company } = useTheme();
-  const { challenges, setChallenges, setBrandDetails } = useChallengeStore();
+  const { challenges, setChallenges, setBrandDetails, setShowNiceWork } =
+    useChallengeStore();
   const [refreshing, setRefreshing] = useState(false);
   const { isAuthenticated } = useContext(AuthContext);
   const { logout } = useAuth();
@@ -126,6 +127,12 @@ export default function SlideshowScreen() {
         const { image, color_scheme } = foundChallenge?.brand;
         setBrandDetails(image, color_scheme);
       }
+
+      // Determine if all activities across all tasks have status === "true"
+      const allActivitiesTrue = !!foundChallenge?.tasks?.every((task) =>
+        task.activities?.every((activity) => String(activity.status) === "true")
+      );
+      setShowNiceWork(allActivitiesTrue);
     }
 
     router.push({

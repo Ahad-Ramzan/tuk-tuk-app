@@ -39,6 +39,9 @@ interface ChallengeState {
   setTimerEndTimestamp: (timestamp: number | null) => void;
   resetTimerEndTimestamp: () => void;
   getTimer: () => number;
+  // UI flags
+  showNiceWork: boolean;
+  setShowNiceWork: (value: boolean) => void;
 }
 
 export const useChallengeStore = create<ChallengeState>((set, get) => ({
@@ -107,4 +110,7 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
     const remaining = Math.floor((timerEndTimestamp - Date.now()) / 1000);
     return remaining > 0 ? remaining : 0;
   },
+  // UI flags
+  showNiceWork: false,
+  setShowNiceWork: (value: boolean) => set({ showNiceWork: value }),
 }));
